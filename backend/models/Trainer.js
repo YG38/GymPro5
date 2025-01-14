@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
+import { Schema, model } from 'mongoose';
 
-const trainerSchema = new mongoose.Schema({
+const trainerSchema = new Schema({
     username: { type: String, required: true },
     password: { type: String, required: true },
-    gymId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gym' },
+    gymId: { type: Schema.Types.ObjectId, ref: 'Gym' },
 });
 
-const Trainer = mongoose.model('Trainer', trainerSchema);
+const Trainer = model('Trainer', trainerSchema);
 
-module.exports = Trainer;
+export default Trainer;

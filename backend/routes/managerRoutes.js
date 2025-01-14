@@ -1,12 +1,12 @@
-const express = require('express');
-const User = require('../models/User');
-const Manager = require('../models/Manager');
+import { Router } from 'express';
+import { findByIdAndDelete } from '../models/User';
+import Manager from '../models/Manager';
 
-const router = express.Router();
+const router = Router();
 
 // Delete a user specific to manager's gym
 router.delete('/delete-user/:userId', async (req, res) => {
-    const user = await User.findByIdAndDelete(req.params.userId);
+    const user = await findByIdAndDelete(req.params.userId);
     if (user) {
         res.status(200).json({ message: 'User deleted successfully!' });
     } else {
@@ -14,4 +14,4 @@ router.delete('/delete-user/:userId', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

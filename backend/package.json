@@ -1,19 +1,17 @@
 {
-  "name": "backend",
+  "name": "gympro5",
   "version": "1.0.0",
-  "description": "",
+  "description": "GymPro5 Backend",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "mongoose": "^8.9.4"
-  }
+    "express": "^4.17.1",
+    "mongoose": "^6.0.0",
+    "body-parser": "^1.19.0"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC"
 }

@@ -1,26 +1,41 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const adminRoutes = require('./routes/adminRoutes');
-const managerRoutes = require('./routes/managerRoutes');
-const trainerRoutes = require('./routes/trainerRoutes');
+import express from 'express';
+import mongoose from 'mongoose'; // Default import for mongoose
+import bodyParser from 'body-parser';
+import WorkoutPlans from './models/workoutPlans.js';
 
-dotenv.config();
+const { connect, connection } = mongoose; // Extract 'connect' and 'connection'
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+// MongoDB connection string
+const dbURI = 'mongodb+srv://ymebratu64:MongodbYoni1@gympro5.rqviz.mongodb.net/gympro5?retryWrites=true&w=majority';
 
-// Use routes
-app.use('/api/admin', adminRoutes);
-app.use('/api/manager', managerRoutes);
-app.use('/api/trainer', trainerRoutes);
+// Connect to MongoDB Atlas
+connect(dbURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+    .then(() => {
+        console.log('Connected to MongoDB Atlas!');
+    })
+    .catch((err) => {
+        console.log('Error connecting to MongoDB Atlas:', err);
+    });
 
+// Routes for workout plans
+
+// Get all workout plans
+app.get('/api/workoutplans', async (req, res) => {
+    try {
+        const workoutPlans = await WorkoutPlans.find();
+        res.json(workoutPlans);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+// Start the server
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
