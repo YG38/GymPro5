@@ -1,28 +1,42 @@
-const express = require('express');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth');
-require('dotenv').config();
-const cors = require('cors');
-
+aconst express = require('express');
 const app = express();
-
-// Connect to MongoDB
-connectDB();
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(cors());
 
-// Routes
-app.use('/api/auth', authRoutes);
-
-// Basic route
+// Example route
 app.get('/', (req, res) => {
-    res.send('API is running...');
+    res.send('Hello World from GymPro5!');
 });
 
-const PORT = process.env.PORT || 5000;
+// Example route for testing
+app.get('/api', (req, res) => {
+    res.json({ message: 'API is working!' });
+});
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+
+// Example route
+app.get('/', (req, res) => {
+    res.send('Hello World from GymPro5!');
+});
+
+// Example route for testing
+app.get('/api', (req, res) => {
+    res.json({ message: 'API is working!' });
+});
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
