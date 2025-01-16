@@ -1,14 +1,6 @@
 {
-  "name": "gympro5",
   "version": 2,
   "builds": [
-    {
-      "src": "gympro5-web/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    },
     {
       "src": "backend/server.js",
       "use": "@vercel/node"
@@ -18,20 +10,11 @@
     {
       "src": "/api/(.*)",
       "dest": "/backend/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/gympro5-web/build/$1"
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://gym-pro5.vercel.app/api",
-    "REACT_APP_ENV": "production"
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/gympro5-web/build/index.html"
-    }
-  ]
+    "MONGO_URI": "your-mongodb-uri",
+    "JWT_SECRET": "your-jwt-secret",
+    "PORT": "5000"
+  }
 }
