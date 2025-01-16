@@ -1,7 +1,7 @@
-const express = require('express');
-const WorkoutPlan = require('../models/WorkoutPlans').default;
+import { Router } from 'express';
+import WorkoutPlan from '../models/WorkoutPlans';
 
-const router = express.Router();
+const router = Router();
 
 // Upload workout plan (trainer only)
 router.post('/upload-workout', async (req, res) => {
@@ -11,4 +11,4 @@ router.post('/upload-workout', async (req, res) => {
     res.status(201).json({ message: 'Workout plan uploaded successfully!' });
 });
 
-module.exports = router;
+export default router;
