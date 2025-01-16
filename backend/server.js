@@ -33,6 +33,9 @@ mongoose
 app.get('/', (req, res) => {
   res.send('Welcome to GymPro5 API');
 });
+app.get('/api/test', (req, res) => {
+  res.send('API is working!');
+});
 
 // Define other routes (Example: User route)
 app.get('/users', (req, res) => {
