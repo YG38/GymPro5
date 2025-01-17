@@ -3,17 +3,21 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import authRoutes from './routes/auth.js'; // Import auth routes
+
 // Load environment variables
 dotenv.config();
 
 // Initialize Express app
 const app = express();
-app.use('/auth', (req, res) => {
-    res.json({ message: 'Authentication routes will be implemented here' });
-  });
-// Middleware to parse JSON
+
+// Middleware to parse JSON and handle CORS
 app.use(express.json());
 app.use(cors());
+
+// Route for authentication
+app.use('/api', authRoutes);
+
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -32,14 +36,6 @@ mongoose
 // Sample route for testing
 app.get('/', (req, res) => {
   res.send('Welcome to GymPro5 API');
-});
-app.get('/api/test', (req, res) => {
-  res.send('API is working!');
-});
-
-// Define other routes (Example: User route)
-app.get('/users', (req, res) => {
-  res.json({ message: 'This is the users route' });
 });
 
 // Error handling for undefined routes (404)
