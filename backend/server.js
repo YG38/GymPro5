@@ -1,50 +1,77 @@
-// Import necessary modules
 import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import authRoutes from './routes/auth.js'; // Import auth routes
+import User from '../models/User.js';  // Assuming you have a User model
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
-// Load environment variables
-dotenv.config();
+const router = express.Router();
 
-// Initialize Express app
-const app = express();
+// POST /signup route
+router.post('/signup', async (req, res) => {
+  const { username, email, password, phone_number } = req.body;
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ error: 'User already exists' });
 
-// Middleware to parse JSON and handle CORS
-app.use(express.json());
-app.use(cors());
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, email, password: hashedPassword, phone_number });
+    await newUser.save();
+    res.status(201).json({ message: 'User created successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
-// Route for authentication
-app.use('/api', authRoutes);
+// POST /login route
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'User not found' });
 
-// MongoDB Connection
-mongoose
-  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log('Connected to MongoDB successfully');
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    // Start the server only after successful MongoDB connection
-    app.listen(5000, () => {
-      console.log('Server is running on http://localhost:5000');
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// POST /forgot-password route
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'User not found' });
+
+    // Generate OTP (just an example, you can implement your logic)
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Send OTP via email (use Nodemailer or any other email service)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
     });
-  })
-  .catch((err) => {
-    console.error('Error connecting to MongoDB:', err);
-  });
 
-// Sample route for testing
-app.get('/', (req, res) => {
-  res.send('Welcome to GymPro5 API');
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset OTP',
+      text: `Your OTP is: ${otp}`
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) return res.status(500).json({ error: 'Failed to send OTP' });
+      res.json({ message: 'OTP sent successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-// Error handling for undefined routes (404)
-app.use((req, res, next) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
+export default router;
