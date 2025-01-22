@@ -1,3 +1,41 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import User from './models/User.js';  // Assuming you have a User model
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+
+dotenv.config();  // Load environment variables from .env file
+
+console.log('MONGODB_URI:', process.env.MONGODB_URI);  // Verify that MONGODB_URI is loaded
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI).then(() => {
+  console.log('Connected to MongoDB');
+}).catch((error) => {
+  console.error('Error connecting to MongoDB:', error);
+});
+
+// Define a route for the root URL
+app.get('/', (req, res) => {
+  res.send('Welcome to GymPro5 API');
+});
+
+// Use auth routes
+app.use('/api', authRoutes);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 import { Router } from 'express';
 import User from '../models/User.js';  // Ensure path and filename match
 import bcrypt from 'bcryptjs';  // Updated import
@@ -83,6 +121,25 @@ router.post('/login', async (req, res) => {
         res.status(200).json({ message: 'Login successful', token });
     } catch (err) {
         console.error('Error in /login route:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Forgot Password Route
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'User not found' });
+
+        const otp = randomInt(100000, 999999).toString();
+
+        sendOTP(email, otp);
+
+        res.status(200).json({ message: 'OTP sent to email.' });
+    } catch (err) {
+        console.error('Error in /forgot-password route:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });
