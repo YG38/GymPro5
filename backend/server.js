@@ -23,6 +23,11 @@ mongoose.connect(process.env.MONGODB_URI).then(() => {
   console.error('Error connecting to MongoDB:', error);
 });
 
+// Define a route for the root URL
+app.get('/', (req, res) => {
+  res.send('Welcome to GymPro5 API');
+});
+
 // POST /signup route
 router.post('/signup', async (req, res) => {
   const { username, email, password, phone_number } = req.body;
