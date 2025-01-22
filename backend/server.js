@@ -1,54 +1,41 @@
-// Import necessary modules
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import cors from 'cors';
-// Load environment variables
-dotenv.config();
+import authRoutes from './routes/auth.js';  // Ensure this is the correct path for your auth.js
 
-// Initialize Express app
+dotenv.config();  // Load environment variables from .env file
+
 const app = express();
-app.use('/auth', (req, res) => {
-    res.json({ message: 'Authentication routes will be implemented here' });
-  });
-// Middleware to parse JSON
+
+// Middleware to parse incoming requests with JSON payloads
 app.use(express.json());
-app.use(cors());
-// MongoDB Connection
-mongoose
-  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log('Connected to MongoDB successfully');
 
-    // Start the server only after successful MongoDB connection
-    app.listen(5000, () => {
-      console.log('Server is running on http://localhost:5000');
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        console.log('Connected to MongoDB');
+    })
+    .catch((err) => {
+        console.error('Error connecting to MongoDB:', err);
     });
-  })
-  .catch((err) => {
-    console.error('Error connecting to MongoDB:', err);
-  });
 
-// Sample route for testing
+// Define a route for the root URL
 app.get('/', (req, res) => {
-  res.send('Welcome to GymPro5 API');
-});
-app.get('/api/test', (req, res) => {
-  res.send('API is working!');
+    res.send('Welcome to GymPro5 API');
 });
 
-// Define other routes (Example: User route)
-app.get('/users', (req, res) => {
-  res.json({ message: 'This is the users route' });
+// Use the authentication routes (register, login, etc.)
+app.use('/api/auth', authRoutes);  // Routes for auth actions like register/login
+
+// Optionally: Debugging all available routes
+app._router.stack.forEach((r) => {
+    if (r.route && r.route.path) {
+        console.log(r.route.path);  // Log all registered routes
+    }
 });
 
-// Error handling for undefined routes (404)
-app.use((req, res, next) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
