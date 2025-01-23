@@ -1,9 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';  // Ensure this is the correct path for your auth.js
+import authRoutes from './routes/auth.js'; // Ensure the path to auth.js is correct
 
-dotenv.config();  // Load environment variables from .env file
+dotenv.config(); // Load environment variables from the .env file
 
 const app = express();
 
@@ -25,12 +25,12 @@ app.get('/', (req, res) => {
 });
 
 // Use the authentication routes (register, login, etc.)
-app.use('/api/auth', authRoutes);  // Routes for auth actions like register/login
+app.use('/api/auth', authRoutes); // Routes for auth actions like register/login
 
-// Optionally: Debugging all available routes
-app._router.stack.forEach((r) => {
-    if (r.route && r.route.path) {
-        console.log(r.route.path);  // Log all registered routes
+// Debugging: Log all available routes
+app._router.stack.forEach((middleware) => {
+    if (middleware.route && middleware.route.path) {
+        console.log(`Registered route: ${middleware.route.path}`);
     }
 });
 
