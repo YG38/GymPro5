@@ -2,9 +2,10 @@
   "name": "gym-pro5",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "start": "node app"
-  },
+ "scripts": {
+  "start": "node server.js",
+  "dev": "nodemon server.js"
+},
   "description": "GymPro5",
   "author": "",
   "dependencies": {
