@@ -34,12 +34,11 @@ const sendOTP = async (email, otp) => {
         console.error('Error sending OTP:', error);
     }
 };
-
 // User Registration Route
 router.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+    const { firstName, lastName, username, email, password } = req.body;
 
-    if (!username || !email || !password) {
+    if (!firstName || !lastName || !username || !email || !password) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
@@ -52,7 +51,7 @@ router.post('/register', async (req, res) => {
         const otp = randomInt(100000, 999999).toString();
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = new User({ username, email, password: hashedPassword, otp });
+        const newUser = new User({ firstName, lastName, username, email, password: hashedPassword, otp });
         await newUser.save();
 
         await sendOTP(email, otp);
@@ -63,6 +62,7 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
 
 // User Login Route
 router.post('/login', async (req, res) => {
