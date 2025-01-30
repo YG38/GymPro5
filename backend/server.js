@@ -2,7 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js'; // Ensure the path to auth.js is correct
+import cors from 'cors'; // Add this line at the top
 
+// Enable CORS for all routes
+app.use(cors());
 dotenv.config(); // Load environment variables from the .env file
 
 const app = express();
