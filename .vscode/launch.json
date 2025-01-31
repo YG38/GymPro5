@@ -1,19 +1,18 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
     {
       "name": "localhost (Edge)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:1337",
+      "url": "http://localhost:5000",
       "webRoot": "${workspaceFolder}/public"
     },
     {
       "name": "localhost (Chrome)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:1337",
+      "url": "http://localhost:5000",
       "webRoot": "${workspaceFolder}/public"
     },
     {
@@ -28,7 +27,7 @@
       "stopOnEntry": true,
       "console": "externalTerminal",
       "env": {
-        "port": "1337"
+        "port": "5000"
       }
     }
   ],
