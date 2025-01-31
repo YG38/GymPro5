@@ -2,16 +2,17 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import authRoutes from './routes/auth.js'; // Import your auth routes
 
-// Initialize express app FIRST
+// Initialize express app
 const app = express();
-
-// Then configure middleware
-app.use(cors());
-app.use(express.json());
 
 // Load environment variables
 dotenv.config();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -21,6 +22,15 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.get('/', (req, res) => {
   res.json({ status: 'success', message: 'Welcome to GymPro5 API' });
+});
+
+// Mount auth routes
+app.use('/api/auth', authRoutes);
+
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.stack);
+  res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
 // Start server
