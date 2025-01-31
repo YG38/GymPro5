@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import authRoutes from './routes/auth.js';
+import authRoutes from './routes/auth.js'; // Import your auth routes
 
 // Initialize express app
 const app = express();
@@ -12,10 +12,17 @@ dotenv.config();
 
 // CORS Configuration
 app.use(cors({
-  origin: ["http://gym-pro5.vercel.app", "https://gym-pro5.vercel.app"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  origin: "http://gym-pro5.vercel.app/", // Allow all origins (replace with your frontend URL for production)
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  credentials: true, // Allow cookies and credentials
 }));
+
+// Middleware to log request data
+app.use((req, res, next) => {
+  console.log(`Incoming Request: ${req.method} ${req.url}`);
+  console.log('Request Body:', req.body);
+  next();
+});
 
 // Middleware
 app.use(express.json());
@@ -23,18 +30,23 @@ app.use(express.json());
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(error => console.error('❌ MongoDB connection error:', error));
+  .catch(error => {
+    console.error('❌ MongoDB connection error:', error);
+    // Log connection errors for debugging
+    process.exit(1);
+  });
 
 // Routes
-app.use('/api/auth', authRoutes); // Ensure this is correct
-
 app.get('/', (req, res) => {
   res.json({ status: 'success', message: 'Welcome to GymPro5 API' });
 });
 
-// Error Handling Middleware
+// Mount auth routes
+app.use('/api/auth', authRoutes);
+
+// Error-handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.stack);
+  console.error('❌ Error:', err.stack);  // Log the error stack trace
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
