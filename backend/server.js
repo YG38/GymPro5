@@ -12,7 +12,7 @@ dotenv.config();
 
 // CORS Configuration
 app.use(cors({
-  origin: "http://gym-pro5.vercel.app", // Allow all origins (replace with your frontend URL for production)
+  origin: "https://gym-pro5.vercel.app", // Allow all origins (replace with your frontend URL for production)
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
   credentials: true, // Allow cookies and credentials
 }));
