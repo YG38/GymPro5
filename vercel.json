@@ -1,21 +1,9 @@
 {
   "version": 2,
-
-"routes": [
-  {
-    "src": "/api/users/(.*)",
-    "dest": "/backend/server.js"
-  },
-  {
-    "src": "/api/auth/(.*)",
-    "dest": "/backend/server.js"
-  }
-]
-,
-  "env": {
-    "MONGODB_URI": "mongodb+srv://ymebratu64:MongodbYoni1@gympro5.mongodb.net/GymPro5?retryWrites=true&w=majority",
-    "JWT_SECRET": "your-jwt-secret",
-    "EMAIL_USER": "your_email@example.com",
-    "EMAIL_PASS": "your_email_password"
-  }
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    }
+  ]
 }
