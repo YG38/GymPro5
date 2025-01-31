@@ -1,6 +1,7 @@
+// app.js
 const express = require('express');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth');
+const connectDB = require('./config/db');  // Assuming you have a config to connect to MongoDB
+const authRoutes = require('./routes/auth');  // Import routes for authentication
 require('dotenv').config();
 const cors = require('cors');
 
@@ -10,11 +11,11 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(express.json()); // To parse incoming JSON requests
-app.use(cors()); // Enable CORS for all domains (you can restrict it if needed)
+app.use(express.json());  // Middleware to parse incoming JSON requests
+app.use(cors());  // Enable CORS for all domains (you can restrict it if needed)
 
 // Routes
-app.use('/api/auth', authRoutes); // This will route /api/auth/* to auth.js routes
+app.use('/api/auth', authRoutes);  // Use auth routes for /api/auth/*
 
 // Basic route for testing
 app.get('/', (req, res) => {

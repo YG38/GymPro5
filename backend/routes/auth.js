@@ -1,5 +1,6 @@
+// auth.js
 import { Router } from 'express';
-import User from '../models/User.js';
+import User from '../models/User.js';  // Import User model
 import bcrypt from 'bcryptjs';
 import { createTransport } from 'nodemailer';
 import { randomInt } from 'crypto';
@@ -39,23 +40,19 @@ const sendOTP = async (email, otp) => {
 router.post('/register', async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
     try {
-        // Check if user already exists
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
-        // Generate OTP and hash the password
         const otp = randomInt(100000, 999999).toString();
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user without username
         const newUser = new User({
             firstName,
             lastName,
@@ -64,13 +61,10 @@ router.post('/register', async (req, res) => {
             otp,
         });
 
-        // Save the user to the database
         await newUser.save();
 
-        // Send OTP to the user's email
         await sendOTP(email, otp);
 
-        // Return success response
         res.status(201).json({ success: true, message: 'User registered. OTP sent to email.' });
     } catch (err) {
         console.error('Error in /register route:', err);
@@ -82,28 +76,23 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
     try {
-        // Find the user by email
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ success: false, message: 'User not found' });
         }
 
-        // Compare the provided password with the hashed password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ success: false, message: 'Invalid password' });
         }
 
-        // Generate a JWT token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-        // Return success response with token
         res.status(200).json({
             success: true,
             message: 'Login successful',
@@ -120,19 +109,15 @@ router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
 
     try {
-        // Find the user by email
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ success: false, message: 'User not found' });
         }
 
-        // Generate OTP
         const otp = randomInt(100000, 999999).toString();
 
-        // Send OTP to the user's email
         await sendOTP(email, otp);
 
-        // Return success response
         res.status(200).json({ success: true, message: 'OTP sent to email.' });
     } catch (err) {
         console.error('Error in /forgot-password route:', err);
@@ -141,3 +126,4 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 export default router;
+vv
