@@ -28,7 +28,9 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(error => console.error('❌ MongoDB connection error:', error));
-
+  app.use(express.json()); // Parses incoming JSON requests
+  app.use(express.urlencoded({ extended: true })); // Parses form-urlencoded data
+  
 // Routes
 app.get('/', (req, res) => {
   res.json({ status: 'success', message: 'Welcome to GymPro5 API' });
