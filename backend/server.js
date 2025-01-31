@@ -17,6 +17,10 @@ app.use(cors({
   credentials: true, // Allow cookies and credentials
 }));
 
+app.get('/api/auth/test', (req, res) => {
+  res.json({ success: true, message: 'Auth route is working' });
+});
+
 // Middleware
 app.use(express.json());
 
