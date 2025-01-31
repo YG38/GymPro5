@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import cors from 'cors';
+import cors from 'cors'; // Import the cors package
 import authRoutes from './routes/auth.js'; // Import your auth routes
 
 // Initialize express app
@@ -10,8 +10,14 @@ const app = express();
 // Load environment variables
 dotenv.config();
 
+// CORS Configuration
+app.use(cors({
+  origin: "http://gym-pro5.vercel.app", // Allow all origins (replace with your frontend URL for production)
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  credentials: true, // Allow cookies and credentials
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
