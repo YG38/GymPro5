@@ -27,14 +27,19 @@ app.use((req, res, next) => {
 // Middleware
 app.use(express.json());
 
+// Add this before mongoose.connect to check environment variables
+console.log('MONGODB_URI:', process.env.MONGODB_URI);
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+  })
   .catch(error => {
     console.error('❌ MongoDB connection error:', error);
-    // Log connection errors for debugging
-    process.exit(1);
+    process.exit(1); // Exit the process if MongoDB fails to connect
   });
+
 
 // Routes
 app.get('/', (req, res) => {
