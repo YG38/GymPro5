@@ -4,7 +4,7 @@
     
     {
       "name": "localhost (Edge)",
-      "type": "edge",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:1337",
       "webRoot": "${workspaceFolder}/public"
