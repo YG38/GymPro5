@@ -43,7 +43,31 @@ router.post('/change-password', authenticateToken, async (req, res) => {
       message: 'Both old and new passwords are required' 
     });
   }
+// Add this route after the change-password route
+router.delete('/delete-account', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
 
+    res.status(200).json({ 
+      success: true, 
+      message: 'Account deleted permanently' 
+    });
+
+  } catch (err) {
+    console.error('Error in /delete-account route:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+});
   try {
     // 1. Find user using ID from JWT
     const user = await User.findById(req.user.id);
