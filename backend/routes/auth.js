@@ -9,65 +9,84 @@ dotenv.config();
 
 const router = Router();
 
+// Middleware to authenticate JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ success: false, message: 'Invalid token' });
+    req.user = user;
+    next();
+  });
+};
+
 // Registration route
 router.post('/register', async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
-
-  if (!firstName || !lastName || !email || !password) {
-    return res.status(400).json({ success: false, message: 'All fields are required' });
-  }
-
-  try {
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
-    }
-
-    const otp = randomInt(100000, 999999).toString();
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({ firstName, lastName, email, password: hashedPassword, otp });
-    await newUser.save();
-
-    // Send OTP to email (implement this function)
-    // await sendOTP(email, otp);
-
-    res.status(201).json({ success: true, message: 'User registered. OTP sent to email.' });
-  } catch (err) {
-    console.error('Error in /register route:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  /* ... existing register code ... */
 });
 
 // Login route
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  /* ... existing login code ... */
+});
 
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required' });
+// Change Password Route
+router.post('/change-password', authenticateToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Both old and new passwords are required' 
+    });
   }
 
   try {
-    const user = await User.findOne({ email });
+    // 1. Find user using ID from JWT
+    const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(400).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // 2. Verify old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid password' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid old password' 
+      });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    // 3. Validate new password
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password must be at least 8 characters' 
+      });
+    }
 
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
+    // 4. Hash and save new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Password updated successfully' 
     });
+
   } catch (err) {
-    console.error('Error in /login route:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error in /change-password route:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
   }
 });
 
