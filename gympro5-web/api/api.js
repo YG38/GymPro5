@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // Replace with your backend URL
+  baseURL: "http://localhost:5000/api", // Ensure your backend is running on this URL
 });
 
-// Add JWT token to requests
+// Attach JWT token to requests
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -13,37 +13,82 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Admin: Add Gym with Manager
+// ---- Admin Endpoints ----
+
+// Add a Gym with a Manager
 export const addGymWithManager = async (gymData) => {
-  return await API.post("/admin/gyms", gymData);
+  try {
+    const response = await API.post("/admin/gyms", gymData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Admin: Delete Gym (cascades to manager/trainers)
+// Delete a Gym (cascades to manager/trainers)
 export const deleteGym = async (gymId) => {
-  return await API.delete(`/admin/gyms/${gymId}`);
+  try {
+    const response = await API.delete(`/admin/gyms/${gymId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Manager: Add Trainer
+// ---- Manager Endpoints ----
+
+// Add a Trainer
 export const addTrainer = async (trainerData) => {
-  return await API.post("/manager/trainers", trainerData);
+  try {
+    const response = await API.post("/manager/trainers", trainerData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Manager: Update Gym Prices
+// Update Gym Prices
 export const updatePrices = async (prices) => {
-  return await API.put("/manager/prices", prices);
+  try {
+    const response = await API.put("/manager/prices", prices);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Manager: Update Gym Location
+// Update Gym Location
 export const updateLocation = async (location) => {
-  return await API.put("/manager/location", location);
+  try {
+    const response = await API.put("/manager/location", location);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Trainer: Add Workout Plan
+// ---- Trainer Endpoints ----
+
+// Add a Workout Plan
 export const addWorkoutPlan = async (planData) => {
-  return await API.post("/trainer/workouts", planData);
+  try {
+    const response = await API.post("/trainer/workouts", planData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
-// Auth: Login
+// ---- Authentication ----
+
+// Login
 export const login = async (credentials) => {
-  return await API.post("/auth/login", credentials);
+  try {
+    const response = await API.post("/auth/login", credentials);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
+
+export default API;
