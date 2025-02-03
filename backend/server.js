@@ -16,6 +16,11 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
   credentials: true, // Allow cookies and credentials
 }));
+app.use(cors({
+  origin: ["http://localhost:3000", "http://gym-pro5.vercel.app"], // Allow both local and deployed frontend
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
 
 // Middleware to log request data
 app.use((req, res, next) => {
