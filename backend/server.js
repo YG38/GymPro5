@@ -2,8 +2,20 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import authRoutes from './routes/auth.js'; // Import your auth routes
+import authRoutes from './routes/auth.js'
+import authWebRoutes from './routes/auth-web.js';  // Import the new route for the web
 
+// Existing code...
+app.use('/api/auth-web', authWebRoutes);  // Mount the new web login route
+
+// Continue with your existing routes
+app.use('/api/auth', authRoutes);  // Keep Android app login route intact
+;
+ // Import your auth routes
+ app.use('/api/auth-web', authWebRoutes);  // Mount the new web login route
+
+ // Continue with your existing routes
+ app.use('/api/auth', authRoutes);  // Keep Android app login route intact
 // Initialize express app
 const app = express();
 
