@@ -2,20 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import authRoutes from './routes/auth.js'
-import authWebRoutes from './routes/auth-web.js';  // Import the new route for the web
+import authRoutes from './routes/auth.js'; // Import your auth routes
 
-// Existing code...
-app.use('/api/auth-web', authWebRoutes);  // Mount the new web login route
-
-// Continue with your existing routes
-app.use('/api/auth', authRoutes);  // Keep Android app login route intact
-;
- // Import your auth routes
- app.use('/api/auth-web', authWebRoutes);  // Mount the new web login route
-
- // Continue with your existing routes
- app.use('/api/auth', authRoutes);  // Keep Android app login route intact
 // Initialize express app
 const app = express();
 
@@ -27,11 +15,6 @@ app.use(cors({
   origin: "http://gym-pro5.vercel.app/", // Allow all origins (replace with your frontend URL for production)
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
   credentials: true, // Allow cookies and credentials
-}));
-app.use(cors({
-  origin: ["http://localhost:3000", "http://gym-pro5.vercel.app"], // Allow both local and deployed frontend
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
 }));
 
 // Middleware to log request data
