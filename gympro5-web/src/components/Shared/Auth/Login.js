@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../../../api/api";  // Keep the same API function
+import { login } from "../../../api/api";  // API call
 import { useAuth } from "../../../context/AuthContext";
 
 const Login = () => {
@@ -8,12 +8,21 @@ const Login = () => {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await login(credentials);  // This will now call the new /auth-web/login endpoint
-      authLogin(response.data.token, credentials.role);
-      navigate(`/${credentials.role}/dashboard`);
+      // Make the login API call
+      const response = await login(credentials);
+      
+      // Assuming the response contains token, role, and expiresIn
+      const { token, role, expiresIn } = response.data;
+      
+      // Call authLogin from context and pass token, role, and expiresIn
+      authLogin(token, role, expiresIn);
+
+      // Navigate based on user role
+      navigate(`/${role}/dashboard`);
     } catch (error) {
       console.error("Login failed:", error);
     }
