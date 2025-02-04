@@ -1,7 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import User from '../models/User.js'
+import jwt from 'jsonwebtoken';
+;
 import dotenv from 'dotenv';
+
 
 dotenv.config();
 
@@ -45,7 +48,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login Route
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -64,12 +66,24 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        res.json({ user: { id: user._id, name: user.name, email: user.email } });
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user._id, email: user.email }, // Payload
+            process.env.JWT_SECRET, // Secret key (store in .env)
+            { expiresIn: '1h' } // Token expiry time (can be adjusted)
+        );
+
+        // Send token along with user data
+        res.json({
+            user: { id: user._id, name: user.name, email: user.email },
+            token: token // Send token in the response
+        });
+
     } catch (error) {
+        console.error(error); // Log error for debugging
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 // Change Password Route
 router.post('/change-password', async (req, res) => {
     try {
