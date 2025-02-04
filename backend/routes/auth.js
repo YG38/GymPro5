@@ -129,18 +129,24 @@ router.post('/change-password', verifyToken, async (req, res) => {
 });
 
 // Delete Account Route
-router.delete('/delete-account', verifyToken, async (req, res) => {
+router.delete('/delete-account', express.json(), verifyToken, async (req, res) => {
     try {
-        const userId = req.user.id; // Get the user ID from the token
-        
-        // Find the user by ID (from the token)
-        const user = await User.findById(userId);
+        const { email } = req.body;  // Get email from request body
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        // Now, we check if the user trying to delete the account matches the token (email from token)
+        if (email !== req.user.email) {
+            return res.status(403).json({ message: 'You are not authorized to delete this account' });
+        }
+
+        // Find and delete the user by email
+        const user = await User.findOneAndDelete({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-
-        // Delete the user account
-        await user.deleteOne();
 
         res.status(200).json({ message: 'Account deleted successfully' });
     } catch (error) {
