@@ -129,23 +129,18 @@ router.post('/change-password', verifyToken, async (req, res) => {
 });
 
 // Delete Account Route
-router.delete('/delete-account', express.json(), async (req, res) => {
+router.delete('/delete-account', verifyToken, async (req, res) => {
     try {
-        console.log("Incoming DELETE Request to /delete-account");
-        console.log("Request Body:", req.body);
-
-        const body = req.body; // Assign the body to a custom variable
-
-        const { email } = body; // Use "body" instead of "req.body"
+        const userId = req.user.id; // Get the user ID from the token
         
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
-        }
-
-        const user = await User.findOneAndDelete({ email });
+        // Find the user by ID (from the token)
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Delete the user account
+        await user.deleteOne();
 
         res.status(200).json({ message: 'Account deleted successfully' });
     } catch (error) {
