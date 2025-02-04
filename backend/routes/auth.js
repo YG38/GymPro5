@@ -129,10 +129,7 @@ router.post('/change-password', verifyToken, async (req, res) => {
 });
 
 // DELETE Account Route with Email Validation and Authentication
-router.delete(
-    '/delete-account',
-    express.json(),
-    body('email').isEmail().withMessage('Invalid email format'), // Validate email format
+router.delete('/delete-account',express.json(),body('email').isEmail().withMessage('Invalid email format'), // Validate email format
     async (req, res) => {
         try {
             // Validate the request body
