@@ -95,7 +95,7 @@ const verifyToken = (req, res, next) => {
 };
 
 // Change Password Route with Token Authentication
-router.post('/changepassword', verifyToken, async (req, res) => {
+router.post('/change-password', verifyToken, async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
         const userId = req.user.id; // Get the user ID from the token
@@ -129,7 +129,7 @@ router.post('/changepassword', verifyToken, async (req, res) => {
 });
 
 // Delete Account Route
-router.delete('/deleteaccount', express.json(), async (req, res) => { // ✅ Add express.json()
+router.delete('/delete-account', express.json(), async (req, res) => { // ✅ Add express.json()
     try {
         console.log("Incoming DELETE Request to /delete-account");
         console.log("Request Body:", req.body);
