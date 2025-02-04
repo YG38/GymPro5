@@ -128,21 +128,25 @@ router.post('/change-password', verifyToken, async (req, res) => {
     }
 });
 
-// Delete Account Route with Token Authentication
-router.delete('/delete-account', verifyToken, async (req, res) => {
+// Delete Account Route
+router.delete('/delete-account', async (req, res) => {
     try {
-        const userId = req.user.id; // Get the user ID from the token
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
 
-        const user = await User.findByIdAndDelete(userId); // Find and delete user by ID from token
+        const user = await User.findOneAndDelete({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json({ message: 'Account deleted permanently' });
+        res.status(200).json({ success: true, message: 'Account deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
 
 
 export default router;
