@@ -129,12 +129,15 @@ router.post('/change-password', verifyToken, async (req, res) => {
 });
 
 // Delete Account Route
-router.delete('/delete-account', express.json(), async (req, res) => { // ✅ Add express.json()
+router.delete('/delete-account', express.json(), async (req, res) => {
     try {
         console.log("Incoming DELETE Request to /delete-account");
         console.log("Request Body:", req.body);
 
-        const { email } = req.body;
+        const body = req.body; // Assign the body to a custom variable
+
+        const { email } = body; // Use "body" instead of "req.body"
+        
         if (!email) {
             return res.status(400).json({ message: 'Email is required' });
         }
@@ -150,5 +153,6 @@ router.delete('/delete-account', express.json(), async (req, res) => { // ✅ Ad
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 export default router;
