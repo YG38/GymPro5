@@ -78,16 +78,33 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-// Change Password Route
-router.post('/change-password', async (req, res) => {
-    try {
-        const { email, oldPassword, newPassword } = req.body;
+// Authentication middleware (to verify token)
+const verifyToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+        return res.status(403).json({ message: 'Token is required' });
+    }
 
-        if (!email || !oldPassword || !newPassword) {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid or expired token' });
+        }
+        req.user = decoded; // Attach the decoded user info to the request
+        next();
+    });
+};
+
+// Change Password Route with Token Authentication
+router.post('/change-password', verifyToken, async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const userId = req.user.id; // Get the user ID from the token
+
+        if (!oldPassword || !newPassword) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findById(userId); // Find user by ID from token
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -111,15 +128,12 @@ router.post('/change-password', async (req, res) => {
     }
 });
 
-// Delete Account Route
-router.delete('/delete-account', async (req, res) => {
+// Delete Account Route with Token Authentication
+router.delete('/delete-account', verifyToken, async (req, res) => {
     try {
-        const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
-        }
+        const userId = req.user.id; // Get the user ID from the token
 
-        const user = await User.findOneAndDelete({ email });
+        const user = await User.findByIdAndDelete(userId); // Find and delete user by ID from token
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -129,5 +143,6 @@ router.delete('/delete-account', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 export default router;
