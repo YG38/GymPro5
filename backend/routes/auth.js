@@ -128,52 +128,27 @@ router.post('/change-password', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE Account Route with Email Validation and Authentication
-router.delete('/delete-account',express.json(),body('email').isEmail().withMessage('Invalid email format'), // Validate email format
-    async (req, res) => {
-        try {
-            // Validate the request body
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ message: errors.array()[0].msg });
-            }
+// Delete Account Route
+router.delete('/delete-account', express.json(), async (req, res) => { // ✅ Add express.json()
+    try {
+        console.log("Incoming DELETE Request to /delete-account");
+        console.log("Request Body:", req.body);
 
-            // Get email and token from the request
-            const { email } = req.body;
-            const token = req.headers['authorization']; // Assuming JWT token is in the header
-
-            // Validate if email and token are provided
-            if (!email) {
-                return res.status(400).json({ message: 'Email is required' });
-            }
-
-            if (!token) {
-                return res.status(401).json({ message: 'Authorization token is missing' });
-            }
-
-            // Verify the JWT token
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                if (!decoded) {
-                    return res.status(403).json({ message: 'Invalid token' });
-                }
-
-                // Proceed to delete the user account
-                const user = await User.findOneAndDelete({ email });
-                if (!user) {
-                    return res.status(404).json({ message: 'User not found' });
-                }
-
-                res.status(200).json({ message: 'Account deleted successfully' });
-            } catch (error) {
-                return res.status(403).json({ message: 'Invalid or expired token' });
-            }
-
-        } catch (error) {
-            console.error("❌ Error in /delete-account:", error);
-            res.status(500).json({ message: 'Server error' });
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
         }
+
+        const user = await User.findOneAndDelete({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error("❌ Error in /delete-account:", error);
+        res.status(500).json({ message: 'Server error' });
     }
-);
+});
 
 export default router;
