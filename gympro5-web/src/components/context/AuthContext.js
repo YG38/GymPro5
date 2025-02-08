@@ -1,47 +1,45 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Corrected import for React Router v6
+import { useAuth } from "../../../context/AuthContext"; // Corrected import path
+import { loginApi } from "../../../api/api"; // Ensure your API call is correct
 
-const AuthContext = createContext();
+const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-
-  // On initial load, check if the user is authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const expiryTime = localStorage.getItem("expiryTime");
-
-    // If token, role, and expiryTime are valid and token is not expired, set user
-    if (token && role && expiryTime && Date.now() < expiryTime) {
-      setUser({ token, role });
-    } else {
-      logout(); // Logout if token is expired or not found
+  const handleLogin = async () => {
+    try {
+      const response = await loginApi(username, password);
+      const { token, role, expiresIn } = response.data;
+      login(token, role, expiresIn);
+      navigate(`/${role}/dashboard`);
+    } catch (err) {
+      setError("Invalid credentials or server error");
     }
-  }, []);
-
-  // Login function, accepts token, role, and expiry time
-  const login = (token, role, expiresIn) => {
-    const expiryTime = Date.now() + expiresIn * 1000; // Expiry time in milliseconds
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", role);
-    localStorage.setItem("expiryTime", expiryTime);
-    setUser({ token, role });
   };
 
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("expiryTime");
-    setUser(null);
-  };
-
-  // The context provider
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <div>
+      <h2>Login</h2>
+      {error && <p>{error}</p>}
+      <input
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Username"
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+      />
+      <button onClick={handleLogin}>Login</button>
+    </div>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export default Login;
