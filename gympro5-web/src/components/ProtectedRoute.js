@@ -1,16 +1,23 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import React from 'react';
+import { Route, Navigate } from 'react-router-dom';  // Updated import
+import { useNavigate } from 'react-router-dom';  // Updated hook
 
-const ProtectedRoute = ({ allowedRoles, children }) => {
-  const { user } = useAuth();
+const ProtectedRoute = ({ component: Component, ...rest }) => {
+  const navigate = useNavigate();  // Updated hook
+  const isAuthenticated = false; // Set your authentication logic
 
-  // If no user or role does not match allowed roles, redirect to home or login page
-  if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" />;
-  }
-
-  return children;
+  return (
+    <Route
+      {...rest}
+      element={
+        isAuthenticated ? (
+          <Component {...rest} />
+        ) : (
+          navigate('/login')  // navigate to login page if not authenticated
+        )
+      }
+    />
+  );
 };
 
 export default ProtectedRoute;
