@@ -17,7 +17,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Login />} />
-        
+
         {/* Admin Routes */}
         <Route
           path="/admin/dashboard"

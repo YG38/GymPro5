@@ -1,57 +1,62 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "../../../api/api";  // API call
-import { useAuth } from "../../../context/AuthContext";
+import { loginUser } from "../../api/api"; // Assume this is the API call to authenticate the user
+import { useHistory } from "react-router-dom"; // For navigation after login
 
-const Login = () => {
-  const [credentials, setCredentials] = useState({ email: "", password: "", role: "admin" });
-  const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+const Login = ({ onLoginSuccess }) => {
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+  const [error, setError] = useState(null);
+  const history = useHistory();
 
-  // Handle form submission
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Make the login API call
-      const response = await login(credentials);
-      
-      // Assuming the response contains token, role, and expiresIn
-      const { token, role, expiresIn } = response.data;
-      
-      // Call authLogin from context and pass token, role, and expiresIn
-      authLogin(token, role, expiresIn);
-
-      // Navigate based on user role
-      navigate(`/${role}/dashboard`);
-    } catch (error) {
-      console.error("Login failed:", error);
+      const response = await loginUser(formData); // Assuming loginUser is the API function that returns a token or success message
+      if (response.status === 200) {
+        onLoginSuccess(response.data); // Handle successful login (e.g., storing token, user info)
+        history.push("/dashboard"); // Redirect to the dashboard after successful login
+      } else {
+        setError("Invalid credentials, please try again.");
+      }
+    } catch (err) {
+      setError("Failed to login, please try again.");
+      console.error(err);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <select
-        value={credentials.role}
-        onChange={(e) => setCredentials({ ...credentials, role: e.target.value })}
-      >
-        <option value="admin">Admin</option>
-        <option value="manager">Manager</option>
-        <option value="trainer">Trainer</option>
-      </select>
-      <input
-        type="email"
-        placeholder="Email"
-        value={credentials.email}
-        onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={credentials.password}
-        onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-      />
-      <button type="submit">Login</button>
-    </form>
+    <div className="login-container">
+      <h2>Login</h2>
+      {error && <p className="error-message">{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="username"
+          placeholder="Username or Email"
+          value={formData.username}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+        <button type="submit">Login</button>
+      </form>
+    </div>
   );
 };
 

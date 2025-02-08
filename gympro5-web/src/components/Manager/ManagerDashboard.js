@@ -1,50 +1,68 @@
 import React, { useEffect, useState } from "react";
-import { fetchTrainers, addTrainer, deleteTrainer, updatePrices, updateLocation } from "../../api/api";
-import AddTrainerForm from "./AddTrainerForm";
-import TrainerList from "./TrainerList";
-import PriceManagement from "./PriceManagement";
-import LocationUpdate from "./LocationUpdate";
+import { fetchTrainees, deleteTrainee, fetchWorkoutPlansByGym, deleteWorkoutPlan } from "../../api/api";
+import TraineeList from "./TraineeList";
+import WorkoutPlanList from "./WorkoutPlanList";
 
 const ManagerDashboard = ({ gymId }) => {
-  const [trainers, setTrainers] = useState([]);
+  const [trainees, setTrainees] = useState([]);
+  const [workoutPlans, setWorkoutPlans] = useState([]);
 
   useEffect(() => {
-    const loadTrainers = async () => {
+    const loadTrainees = async () => {
       try {
-        const response = await fetchTrainers(gymId);
-        setTrainers(response.data);
+        const response = await fetchTrainees(gymId);
+        setTrainees(response.data);
       } catch (error) {
-        console.error("Failed to fetch trainers:", error);
+        console.error("Failed to fetch trainees:", error);
       }
     };
-    loadTrainers();
+
+    const loadWorkoutPlans = async () => {
+      try {
+        const response = await fetchWorkoutPlansByGym(gymId);
+        setWorkoutPlans(response.data);
+      } catch (error) {
+        console.error("Failed to fetch workout plans:", error);
+      }
+    };
+
+    loadTrainees();
+    loadWorkoutPlans();
   }, [gymId]);
 
-  const handleAddTrainer = async (trainerData) => {
+  const handleDeleteTrainee = async (traineeId) => {
     try {
-      const response = await addTrainer(gymId, trainerData);
-      setTrainers([...trainers, response.data]);
+      await deleteTrainee(traineeId);
+      setTrainees(trainees.filter((trainee) => trainee._id !== traineeId));
     } catch (error) {
-      console.error("Failed to add trainer:", error);
+      console.error("Failed to delete trainee:", error);
     }
   };
 
-  const handleDeleteTrainer = async (trainerId) => {
+  const handleDeleteWorkoutPlan = async (planId) => {
     try {
-      await deleteTrainer(trainerId);
-      setTrainers(trainers.filter((trainer) => trainer._id !== trainerId));
+      await deleteWorkoutPlan(planId);
+      setWorkoutPlans(workoutPlans.filter((plan) => plan._id !== planId));
     } catch (error) {
-      console.error("Failed to delete trainer:", error);
+      console.error("Failed to delete workout plan:", error);
     }
   };
 
   return (
     <div className="manager-dashboard">
       <h1>Manager Dashboard</h1>
-      <AddTrainerForm onAddTrainer={handleAddTrainer} />
-      <TrainerList trainers={trainers} onDeleteTrainer={handleDeleteTrainer} />
-      <PriceManagement gymId={gymId} onUpdatePrices={updatePrices} />
-      <LocationUpdate gymId={gymId} onUpdateLocation={updateLocation} />
+
+      {/* Trainee Management Section */}
+      <div className="trainee-management">
+        <h2>Manage Trainees</h2>
+        <TraineeList trainees={trainees} onDeleteTrainee={handleDeleteTrainee} />
+      </div>
+
+      {/* Workout Plan Management Section */}
+      <div className="workout-plan-management">
+        <h2>Manage Workout Plans</h2>
+        <WorkoutPlanList workoutPlans={workoutPlans} onDeleteWorkout={handleDeleteWorkoutPlan} />
+      </div>
     </div>
   );
 };

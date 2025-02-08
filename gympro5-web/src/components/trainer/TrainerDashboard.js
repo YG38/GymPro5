@@ -5,6 +5,8 @@ import WorkoutPlanList from "./WorkoutPlanList";
 
 const TrainerDashboard = ({ trainerId }) => {
   const [workouts, setWorkouts] = useState([]);
+  const [categories, setCategories] = useState(["Strength", "Cardio", "Flexibility", "Endurance"]);
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
     const loadWorkouts = async () => {
@@ -20,7 +22,7 @@ const TrainerDashboard = ({ trainerId }) => {
 
   const handleAddWorkout = async (planData) => {
     try {
-      const response = await addWorkoutPlan(trainerId, planData);
+      const response = await addWorkoutPlan(trainerId, selectedCategory, planData);
       setWorkouts([...workouts, response.data]);
     } catch (error) {
       console.error("Failed to add workout plan:", error);
@@ -36,10 +38,33 @@ const TrainerDashboard = ({ trainerId }) => {
     }
   };
 
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+  };
+
   return (
     <div className="trainer-dashboard">
       <h1>Trainer Dashboard</h1>
-      <WorkoutPlanForm onAddWorkout={handleAddWorkout} />
+
+      {/* Category Selection */}
+      <div className="category-selection">
+        <label>Select Category: </label>
+        <select value={selectedCategory} onChange={handleCategoryChange}>
+          <option value="">Choose Category</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Add Workout Plan Form */}
+      {selectedCategory && (
+        <WorkoutPlanForm onAddWorkout={handleAddWorkout} trainerId={trainerId} selectedCategory={selectedCategory} />
+      )}
+
+      {/* Workout Plans List */}
       <WorkoutPlanList workouts={workouts} onDeleteWorkout={handleDeleteWorkout} />
     </div>
   );

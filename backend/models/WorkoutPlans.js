@@ -1,5 +1,3 @@
-// models/WorkoutPlans.js
-
 import mongoose from 'mongoose';
 
 // Define the schema for the workout plans
@@ -17,6 +15,11 @@ const workoutPlanSchema = new mongoose.Schema({
     duration: {
         type: Number,
         required: true, // Duration in weeks
+    },
+    category: {
+        type: String,
+        required: true, // Category is now required for each workout plan
+        enum: ["Cardio", "Strength", "Flexibility", "HIIT", "Yoga", "Pilates"], // You can modify this list of categories as per your needs
     },
     exercises: [
         {

@@ -1,46 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { fetchGyms, addGymWithManager, deleteGym } from "../../api/api";
-import AddGymForm from "./AddGymForm";
 import GymList from "./GymList";
+import AddGymForm from "./AddGymForm";
 
 const AdminDashboard = () => {
   const [gyms, setGyms] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadGyms = async () => {
       try {
-        const response = await fetchGyms();
+        const response = await fetchGyms(); // Assume this API fetches the gym list
         setGyms(response.data);
-      } catch (error) {
-        console.error("Failed to fetch gyms:", error);
+      } catch (err) {
+        setError("Failed to fetch gyms");
+        console.error(err);
       }
     };
     loadGyms();
   }, []);
 
-  const handleAddGym = async (gymData) => {
-    try {
-      const response = await addGymWithManager(gymData);
-      setGyms([...gyms, response.data]);
-    } catch (error) {
-      console.error("Failed to add gym:", error);
-    }
+  const handleAddGym = (newGym) => {
+    setGyms([...gyms, newGym]);
   };
 
   const handleDeleteGym = async (gymId) => {
     try {
-      await deleteGym(gymId);
+      await deleteGym(gymId); // Assume this API deletes the gym
       setGyms(gyms.filter((gym) => gym._id !== gymId));
     } catch (error) {
-      console.error("Failed to delete gym:", error);
+      setError("Failed to delete gym");
+      console.error("Error deleting gym", error);
     }
   };
 
   return (
     <div className="admin-dashboard">
       <h1>Admin Dashboard</h1>
+      {error && <p className="error-message">{error}</p>}
+
+      <h2>Add a New Gym</h2>
       <AddGymForm onAddGym={handleAddGym} />
-      <GymList gyms={gyms} onDeleteGym={handleDeleteGym} />
+
+      <h2>Manage Gyms</h2>
+      {gyms.length === 0 ? (
+        <p>No gyms found.</p>
+      ) : (
+        <GymList gyms={gyms} onDeleteGym={handleDeleteGym} />
+      )}
     </div>
   );
 };

@@ -1,17 +1,22 @@
 import React from "react";
 
-const TrainerList = ({ trainers, onDeleteTrainer }) => {
+const TraineeList = ({ trainees, onDeleteTrainee }) => {
   return (
-    <div className="trainer-list">
-      {trainers.map((trainer) => (
-        <div key={trainer._id} className="trainer-item">
-          <h3>{trainer.name}</h3>
-          <p>{trainer.email}</p>
-          <button onClick={() => onDeleteTrainer(trainer._id)}>Delete Trainer</button>
-        </div>
-      ))}
+    <div>
+      {trainees.length > 0 ? (
+        <ul>
+          {trainees.map((trainee) => (
+            <li key={trainee._id}>
+              {trainee.name} - {trainee.email}
+              <button onClick={() => onDeleteTrainee(trainee._id)}>Delete</button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No trainees found.</p>
+      )}
     </div>
   );
 };
 
-export default TrainerList;
+export default TraineeList;

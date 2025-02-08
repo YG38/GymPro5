@@ -3,9 +3,10 @@ import { updatePrices } from "../../api/api";
 
 const PriceManagement = ({ gymId }) => {
   const [prices, setPrices] = useState({
-    basic: "",
-    premium: "",
-    platinum: "",
+    oneMonth: "",
+    threeMonths: "",
+    sixMonths: "",
+    oneYear: "",
   });
 
   const handleSubmit = async (e) => {
@@ -22,21 +23,27 @@ const PriceManagement = ({ gymId }) => {
     <form onSubmit={handleSubmit}>
       <input
         type="number"
-        placeholder="Basic Price"
-        value={prices.basic}
-        onChange={(e) => setPrices({ ...prices, basic: e.target.value })}
+        placeholder="1 Month Price"
+        value={prices.oneMonth}
+        onChange={(e) => setPrices({ ...prices, oneMonth: e.target.value })}
       />
       <input
         type="number"
-        placeholder="Premium Price"
-        value={prices.premium}
-        onChange={(e) => setPrices({ ...prices, premium: e.target.value })}
+        placeholder="3 Months Price"
+        value={prices.threeMonths}
+        onChange={(e) => setPrices({ ...prices, threeMonths: e.target.value })}
       />
       <input
         type="number"
-        placeholder="Platinum Price"
-        value={prices.platinum}
-        onChange={(e) => setPrices({ ...prices, platinum: e.target.value })}
+        placeholder="6 Months Price"
+        value={prices.sixMonths}
+        onChange={(e) => setPrices({ ...prices, sixMonths: e.target.value })}
+      />
+      <input
+        type="number"
+        placeholder="1 Year Price"
+        value={prices.oneYear}
+        onChange={(e) => setPrices({ ...prices, oneYear: e.target.value })}
       />
       <button type="submit">Update Prices</button>
     </form>
