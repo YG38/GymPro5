@@ -1,7 +1,10 @@
 import axios from "axios";
 
+// Set the base URL depending on the environment (development or production)
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // Ensure your backend is running on this URL
+  baseURL: process.env.NODE_ENV === 'development' 
+    ? "http://localhost:5000/api" 
+    : "https://your-production-url.com/api", // Update with your production URL
 });
 
 // Attach JWT token to requests
@@ -13,6 +16,19 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle token expiry and logout automatically if token is expired
+API.interceptors.response.use(
+  response => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Handle Unauthorized (token expired or invalid)
+      localStorage.removeItem("token");
+      window.location.href = "/login"; // Redirect to login page
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ---- Admin Endpoints ----
 
 // Add a Gym with a Manager
@@ -21,7 +37,8 @@ export const addGymWithManager = async (gymData) => {
     const response = await API.post("/admin/gyms", gymData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -31,7 +48,8 @@ export const deleteGym = async (gymId) => {
     const response = await API.delete(`/admin/gyms/${gymId}`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -43,7 +61,8 @@ export const addTrainer = async (trainerData) => {
     const response = await API.post("/manager/trainers", trainerData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -53,7 +72,8 @@ export const updatePrices = async (prices) => {
     const response = await API.put("/manager/prices", prices);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -63,7 +83,8 @@ export const updateLocation = async (location) => {
     const response = await API.put("/manager/location", location);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -75,7 +96,8 @@ export const addWorkoutPlan = async (planData) => {
     const response = await API.post("/trainer/workouts", planData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
@@ -87,7 +109,8 @@ export const login = async (credentials) => {
     const response = await API.post("/auth/login", credentials);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
+    throw new Error(errorMessage);
   }
 };
 
