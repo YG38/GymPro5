@@ -1,13 +1,12 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext"; // Corrected import path
-
-import HomePage from "./pages/HomePage"; // Corrected import path
-import Login from "./components/Shared/Auth/Login"; // Corrected import path
-import AdminPage from "./pages/AdminPage"; // Corrected import path
-import ManagerPage from "./pages/ManagerPage"; // Corrected import path
-import TrainerPage from "./pages/TrainerPage"; // Corrected import path
-import ProtectedRoute from "./components/Shared/ProtectedRoute"; // Corrected import path
+import { useAuth } from "./context/AuthContext";  
+import HomePage from "./pages/HomePage";  
+import AdminPage from "./pages/AdminPage";  
+import ManagerPage from "./pages/ManagerPage";  
+import TrainerPage from "./pages/TrainerPage";  
+import Login from "./components/Shared/Auth/Login";  
+import ProtectedRoute from "./components/Shared/ProtectedRoute";  
 
 const App = () => {
   const { user } = useAuth();
