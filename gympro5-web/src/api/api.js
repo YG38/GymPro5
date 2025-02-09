@@ -1,10 +1,9 @@
 import axios from "axios";
 
-// Set the base URL depending on the environment (development or production)
 const API = axios.create({
-  baseURL: process.env.NODE_ENV === "development" 
-    ? "http://localhost:5000/api" 
-    : "https://gym-pro5.vercel.app", // Update with your production URL
+  baseURL: process.env.NODE_ENV === "development"
+    ? "http://localhost:5000/api"
+    : "https://gym-pro5.vercel.app/api", // ✅ Ensure `/api` is included
 });
 
 // Attach JWT token to requests
@@ -16,22 +15,23 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token expiry and logout automatically if token is expired
+// Handle token expiry
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Handle Unauthorized (token expired or invalid)
-      localStorage.removeItem("token");
-      window.location.href = "/login"; // Redirect to login page
+    try {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    } catch (err) {
+      console.error("Interceptor error:", err);
     }
     return Promise.reject(error);
   }
 );
 
 // ---- 🏛️ Admin Endpoints ----
-
-// Add a Gym with a Manager
 export const addGymWithManager = async (gymData) => {
   try {
     const response = await API.post("/admin/gyms", gymData);
@@ -41,7 +41,6 @@ export const addGymWithManager = async (gymData) => {
   }
 };
 
-// Delete a Gym (cascades to manager/trainers)
 export const deleteGym = async (gymId) => {
   try {
     const response = await API.delete(`/admin/gyms/${gymId}`);
@@ -52,8 +51,6 @@ export const deleteGym = async (gymId) => {
 };
 
 // ---- 👨‍💼 Manager Endpoints ----
-
-// Add a Trainer
 export const addTrainer = async (trainerData) => {
   try {
     const response = await API.post("/manager/trainers", trainerData);
@@ -63,7 +60,6 @@ export const addTrainer = async (trainerData) => {
   }
 };
 
-// Update Gym Prices
 export const updatePrices = async (prices) => {
   try {
     const response = await API.put("/manager/prices", prices);
@@ -73,7 +69,6 @@ export const updatePrices = async (prices) => {
   }
 };
 
-// Update Gym Location
 export const updateLocation = async (location) => {
   try {
     const response = await API.put("/manager/location", location);
@@ -84,8 +79,6 @@ export const updateLocation = async (location) => {
 };
 
 // ---- 🏋️‍♂️ Trainer Endpoints ----
-
-// Add a Workout Plan
 export const addWorkoutPlan = async (planData) => {
   try {
     const response = await API.post("/trainer/workouts", planData);
@@ -96,19 +89,15 @@ export const addWorkoutPlan = async (planData) => {
 };
 
 // ---- 🔐 Authentication ----
-
-// Login
 export const login = async (credentials) => {
   try {
     const response = await API.post("/auth/login", credentials);
-    return response.data; // Must include { token: "your-jwt-token" }
+    return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "Login failed.");
   }
 };
 
-
-// Register
 export const register = async (userData) => {
   try {
     const response = await API.post("/auth/register", userData);
@@ -118,10 +107,9 @@ export const register = async (userData) => {
   }
 };
 
-// Logout (optional: you can just remove token manually)
-export const logout = () => {
+export const logout = (navigate) => {
   localStorage.removeItem("token");
-  window.location.href = "/login"; // Redirect to login page
+  navigate("/login"); // ✅ Use `navigate` instead of forcing a reload
 };
 
 export default API;
