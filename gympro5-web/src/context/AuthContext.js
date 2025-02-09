@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Corrected import for React Router v6
-import { useAuth } from "../../../context/AuthContext"; // Corrected import path
-import { loginApi } from "../../../api/api"; // Ensure your API call is correct
+import React, { createContext, useContext, useState } from "react";
+import { loginApi } from "../api/api"; // Ensure this function exists in `api.js`
 
 const Login = () => {
   const navigate = useNavigate();

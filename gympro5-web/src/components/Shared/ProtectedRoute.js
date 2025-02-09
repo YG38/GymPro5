@@ -1,6 +1,6 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext"; // Corrected import path
+import { Navigate, Outlet } from "react-router-dom"; // React Router v6
+import { useAuth } from "../../context/AuthContext"; // Ensure correct path
 
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const { user, loading } = useAuth(); // Ensure useAuth() provides a loading state

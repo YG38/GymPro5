@@ -1,28 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../../api/api';  // Corrected import
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // React Router v6
+import { useAuth } from "../../../context/AuthContext"; // Ensure this is correct
+import { loginApi } from "../../../api/api"; // API call for login
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login } = useAuth();  // Get login function from context
 
-  const handleLogin = async () => {
-    try {
-      const response = await login({ email, password }); // Correct API call
-      localStorage.setItem('token', response.token); // Store token
-      navigate('/home');  // Redirect to home page
-    } catch (error) {
-      setError(error.message); // Display error
-      console.error('Error logging in:', error);
-    }
+  const handleLogin = () => {
+    // Example login logic
+    const userData = { name: "John Doe", email };  // Replace with actual logic
+    login(userData);  // Set user in context
+
+    // Optionally navigate to another page after login (you can use react-router here)
+    console.log("User logged in:", userData);
   };
 
   return (
     <div>
-      <h2>Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>} {/* Show if anyerror  */}
       <input 
         type="email" 
         value={email} 
