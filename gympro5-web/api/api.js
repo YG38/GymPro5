@@ -4,7 +4,7 @@ import axios from "axios";
 const API = axios.create({
   baseURL: process.env.NODE_ENV === 'development' 
     ? "http://localhost:5000/api" 
-    : "https://your-production-url.com/api", // Update with your production URL
+    : "https://gym-pro5.vercel.app", // Update with your production URL
 });
 
 // Attach JWT token to requests
