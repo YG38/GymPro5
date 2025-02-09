@@ -1,74 +1,51 @@
-import React, { useState } from "react";
-import axios from "axios"; // Ensure axios is imported
-import { useAuth } from "../../../context/AuthContext"; // Ensure this is correct
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState(""); // State to handle role
-  const { login } = useAuth();  // Get login function from context
+const router = express.Router();
 
-  const handleLogin = async () => {
-    // Check if the role is selected
-    if (!role || !email || !password) {
-      alert("All fields are required!");
-      return;
+// Login route for the web
+router.post('/web/login', async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    // Validate inputs
+    if (!email || !password || !role) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth-web/web/login", // Correct URL
-        {
-          email,    // Email entered by the user
-          password, // Password entered by the user
-          role,     // Role entered by the user (e.g., admin, trainer)
-        }
-      );
-
-      // On successful login, process the token and role
-      if (response.data.token) {
-        login(response.data);  // Store user data in context
-        console.log("User logged in:", response.data);
-        // You can redirect to another page here using React Router if needed
-      }
-    } catch (error) {
-      console.error("Login failed:", error.response?.data || error.message);
-      alert(error.response?.data.message || "Login failed");
+    // Check for a predefined admin login (for testing)
+    if (email === "admin@example.com" && password === "yourpassword" && role === "admin") {
+      // Create a token
+      const token = jwt.sign({ userId: "admin", role: "admin" }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      return res.json({ token, role: "admin" });
     }
-  };
 
-  return (
-    <div>
-      <h2>Login</h2>
-      
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-      />
-      
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-      />
-      
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
-        placeholder="Role"
-      >
-        <option value="">Select Role</option>
-        <option value="admin">Admin</option>
-        <option value="manager">Manager</option>
-        <option value="trainer">Trainer</option>
-      </select>
-      
-      <button onClick={handleLogin}>Login</button>
-    </div>
-  );
-};
+    // Check for other users in DB
+    const user = await User.findOne({ email, role });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found or incorrect role' });
+    }
 
-export default Login;
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({ token, role: user.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+export default router;
