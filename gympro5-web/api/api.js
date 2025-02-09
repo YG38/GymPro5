@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Set the base URL depending on the environment (development or production)
 const API = axios.create({
-  baseURL: process.env.NODE_ENV === 'development' 
+  baseURL: process.env.NODE_ENV === "development" 
     ? "http://localhost:5000/api" 
     : "https://gym-pro5.vercel.app", // Update with your production URL
 });
@@ -18,7 +18,7 @@ API.interceptors.request.use((config) => {
 
 // Handle token expiry and logout automatically if token is expired
 API.interceptors.response.use(
-  response => response,
+  (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       // Handle Unauthorized (token expired or invalid)
@@ -29,7 +29,7 @@ API.interceptors.response.use(
   }
 );
 
-// ---- Admin Endpoints ----
+// ---- 🏛️ Admin Endpoints ----
 
 // Add a Gym with a Manager
 export const addGymWithManager = async (gymData) => {
@@ -37,8 +37,7 @@ export const addGymWithManager = async (gymData) => {
     const response = await API.post("/admin/gyms", gymData);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
@@ -48,12 +47,11 @@ export const deleteGym = async (gymId) => {
     const response = await API.delete(`/admin/gyms/${gymId}`);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
-// ---- Manager Endpoints ----
+// ---- 👨‍💼 Manager Endpoints ----
 
 // Add a Trainer
 export const addTrainer = async (trainerData) => {
@@ -61,8 +59,7 @@ export const addTrainer = async (trainerData) => {
     const response = await API.post("/manager/trainers", trainerData);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
@@ -72,8 +69,7 @@ export const updatePrices = async (prices) => {
     const response = await API.put("/manager/prices", prices);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
@@ -83,12 +79,11 @@ export const updateLocation = async (location) => {
     const response = await API.put("/manager/location", location);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
-// ---- Trainer Endpoints ----
+// ---- 🏋️‍♂️ Trainer Endpoints ----
 
 // Add a Workout Plan
 export const addWorkoutPlan = async (planData) => {
@@ -96,12 +91,11 @@ export const addWorkoutPlan = async (planData) => {
     const response = await API.post("/trainer/workouts", planData);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
-// ---- Authentication ----
+// ---- 🔐 Authentication ----
 
 // Login
 export const login = async (credentials) => {
@@ -109,9 +103,24 @@ export const login = async (credentials) => {
     const response = await API.post("/auth/login", credentials);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || "An unexpected error occurred.";
-    throw new Error(errorMessage);
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
+};
+
+// Register
+export const register = async (userData) => {
+  try {
+    const response = await API.post("/auth/register", userData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+  }
+};
+
+// Logout (optional: you can just remove token manually)
+export const logout = () => {
+  localStorage.removeItem("token");
+  window.location.href = "/login"; // Redirect to login page
 };
 
 export default API;
