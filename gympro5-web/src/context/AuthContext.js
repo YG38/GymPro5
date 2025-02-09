@@ -1,43 +1,38 @@
 import React, { createContext, useContext, useState } from "react";
-import { loginApi } from "../api/api"; // Ensure this function exists in `api.js`
+import { useNavigate } from "react-router-dom"; // Correct useNavigate import
+import { login } from "../api/api"; // Ensure 'login' exists in `api.js`
 
-const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+const AuthContext = createContext();
 
-  const handleLogin = async () => {
-    try {
-      const response = await loginApi(username, password);
-      const { token, role, expiresIn } = response.data;
-      login(token, role, expiresIn);
-      navigate(`/${role}/dashboard`);
-    } catch (err) {
-      setError("Invalid credentials or server error");
-    }
-  };
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
 
-  return (
-    <div>
-      <h2>Login</h2>
-      {error && <p>{error}</p>}
-      <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-      />
-      <button onClick={handleLogin}>Login</button>
-    </div>
-  );
+    const loginUser = async (credentials) => {
+        try {
+            const response = await login(credentials);
+            setUser(response.user);
+            navigate("/dashboard"); // Redirect after login
+        } catch (error) {
+            console.error("Login failed", error);
+        }
+    };
+
+    const logoutUser = () => {
+        setUser(null);
+        navigate("/login"); // Redirect to login after logout
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, loginUser, logoutUser }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-export default Login;
+// ✅ Correctly export useAuth hook
+export const useAuth = () => {
+    return useContext(AuthContext);
+};
+
+export default AuthContext;
