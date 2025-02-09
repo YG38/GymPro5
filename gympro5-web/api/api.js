@@ -101,11 +101,12 @@ export const addWorkoutPlan = async (planData) => {
 export const login = async (credentials) => {
   try {
     const response = await API.post("/auth/login", credentials);
-    return response.data;
+    return response.data; // Must include { token: "your-jwt-token" }
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw new Error(error.response?.data?.message || "Login failed.");
   }
 };
+
 
 // Register
 export const register = async (userData) => {
