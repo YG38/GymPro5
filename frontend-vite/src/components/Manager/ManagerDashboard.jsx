@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { fetchTrainees, deleteTrainee, fetchWorkoutPlansByGym, deleteWorkoutPlan } from "../../api/api";
+import { fetchTrainees, deleteTrainee, fetchTrainers, deleteTrainer} from "../../api/api";
 import TraineeList from "./TraineeList";
-import WorkoutPlanList from "./WorkoutPlanList";
+
 
 const ManagerDashboard = ({ gymId }) => {
   const [trainees, setTrainees] = useState([]);

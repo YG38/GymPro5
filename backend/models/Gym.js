@@ -1,11 +1,25 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 
-const gymSchema = new Schema({
-    gymName: { type: String, required: true },
-    location: { type: String, required: true },
-    price: { type: Number, required: true },
+const gymSchema = new mongoose.Schema({
+  gymName: {
+    type: String,
+    required: true
+  },
+  location: {
+    type: String,
+    required: true
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  manager: {
+    type: String,
+    required: true
+  }
 });
 
-const Gym = model('Gym', gymSchema);
+const Gym = mongoose.model('Gym', gymSchema);
 
-export default Gym;
+// Named export
+export { Gym };

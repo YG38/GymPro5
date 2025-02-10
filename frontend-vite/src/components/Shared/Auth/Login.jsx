@@ -1,37 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from 'react-router-dom';
+import '../../../Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth(); // Use the login function from AuthContext
-
-  useEffect(() => {
-    // Check if the user is already authenticated (check if a token exists)
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      // Optionally, decode the token to check role or expiry
-      login({ token, role: 'admin' }); // If token exists, login with the current token
-    }
-  }, [login]);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     try {
-      // For admin login, hardcode the credentials (just for testing purposes)
       if (email === 'ymebratu64@gmail.com' && password === 'YoniReact1@mom' && role === 'admin') {
-        const token = 'admin-token'; // For testing, replace with real token from backend
-        localStorage.setItem('authToken', token);
-        login({ token, role: 'admin' }); // Login with admin token
+        sessionStorage.setItem('authToken', 'admin-token');
+        sessionStorage.setItem('role', 'admin');
+        sessionStorage.setItem('email', 'ymebratu64@gmail.com');
+  
+        login({ token: 'admin-token', role: 'admin' });
+  
         console.log('Admin login successful');
+        navigate('/admin/AdminDashboard'); // Double-check if this path is correct
         return;
       }
 
-      // For other users, check credentials in the database
       const response = await axios.post('http://localhost:5000/web/login', {
         email,
         password,
@@ -40,39 +36,50 @@ const Login = () => {
 
       const { token, role: userRole } = response.data;
 
-      // Store the token in localStorage for permanent login
-      localStorage.setItem('authToken', token);
+      sessionStorage.setItem('authToken', token);
+      sessionStorage.setItem('role', userRole);
 
-      // Login with the token and role
       login({ token, role: userRole });
 
       console.log(`${userRole} login successful`);
+
+      // Log role for debugging
+      console.log('User Role:', userRole);
+
+      // Check if userRole matches expected value
+      if (userRole === 'admin') {
+        navigate('/admin/AdminDashboard');
+      } else if (userRole === 'manager') {
+        navigate('/manager/ManagerDashboard');
+      } else if (userRole === 'trainer') {
+        navigate('/trainer/TrainerDashboard');
+      }
     } catch (error) {
       setErrorMessage(error.response ? error.response.data.message : 'Server error');
     }
   };
 
   const handleLogout = () => {
-    // Remove the token from localStorage and update authenticated state
-    localStorage.removeItem('authToken');
-    login({ token: null, role: null }); // Clear authentication context
+    sessionStorage.clear();
+    login({ token: null, role: null });
     setEmail('');
     setPassword('');
     setRole('');
   };
 
   return (
-    <div>
+    <div className="login-container">
       <h2>Login</h2>
 
-      {!localStorage.getItem('authToken') ? (
-        <form onSubmit={handleLogin}>
+      {!sessionStorage.getItem('authToken') ? (
+        <form className="login-form" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="login-input"
           />
           <input
             type="password"
@@ -80,26 +87,29 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="login-input"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             required
+            className="login-select"
           >
             <option value="">Select Role</option>
             <option value="admin">Admin</option>
-            <option value="user">User</option>
+            <option value="manager">Manager</option>
+            <option value="trainer">Trainer</option>
           </select>
-          <button type="submit">Login</button>
+          <button type="submit" className="login-button">Login</button>
         </form>
       ) : (
-        <div>
-          <h2>Welcome, {role === 'admin' ? 'Admin' : 'User'}!</h2>
-          <button onClick={handleLogout}>Logout</button>
+        <div className="welcome-container">
+          <h2>Welcome, {role.charAt(0).toUpperCase() + role.slice(1)}!</h2>
+          <button onClick={handleLogout} className="logout-button">Logout</button>
         </div>
       )}
 
-      {errorMessage && <p>{errorMessage}</p>}
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
     </div>
   );
 };

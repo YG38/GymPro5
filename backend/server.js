@@ -2,8 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import gymRoutes from './routes/gym.js';
 import authRoutes from './routes/auth.js'; // For Android app authentication
-import authWebRoutes from './routes/auth-web.js'; // For React web authentication
+import authWebRoutes from './routes/auth-web.js';
+ // For React web authentication
 
 // Initialize express app
 const app = express();
@@ -54,7 +56,7 @@ app.get('/', (req, res) => {
 // Separate authentication routes for Web & Android
 app.use('/api/auth', authRoutes); // Android app authentication
 app.use('/api/auth-web', authWebRoutes); // Web app authentication
-
+app.use('/api', gymRoutes); // Use gym routes at '/api'
 // Global Error Handling
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err.stack);

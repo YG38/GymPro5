@@ -1,11 +1,19 @@
-import { Schema, model } from 'mongoose';
+const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
-const managerSchema = new Schema({
-    username: { type: String, required: true },
-    password: { type: String, required: true },
-    gymId: { type: Schema.Types.ObjectId, ref: 'Gym' },
+const ManagerSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
 });
 
-const Manager = model('Manager', managerSchema);
+// Hash password before saving
+ManagerSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
-export default Manager;
+const Manager = mongoose.model('Manager', ManagerSchema);
+module.exports = Manager;
