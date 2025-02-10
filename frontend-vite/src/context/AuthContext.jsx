@@ -1,45 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { login, logout } from "../api/api"; // Ensure correct imports
-import { useNavigate } from "react-router-dom"; // Required for navigation
+import { createContext, useContext, useState } from 'react';
 
-const AuthContext = createContext();
+// Create AuthContext
+const AuthContext = createContext(null);
 
+// AuthProvider Component
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+  // Login function to set user data
+  const login = (userData) => setUser(userData);
 
-    const loginUser = async (credentials) => {
-        try {
-            const response = await login(credentials); // Call login API
-            setUser(response.user);
-            localStorage.setItem("user", JSON.stringify(response.user));
-            navigate(`/${response.user.role}/dashboard`); // Redirect
-        } catch (error) {
-            console.error("Login failed:", error);
-        }
-    };
+  // Logout function to clear user data
+  const logout = () => setUser(null);
 
-    const logoutUser = () => {
-        logout();
-        setUser(null);
-        localStorage.removeItem("user");
-        navigate("/login");
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, loginUser, logoutUser }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-// ✅ Correctly export useAuth
-export const useAuth = () => useContext(AuthContext);
-export default AuthContext;
+// Custom hook to use AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
