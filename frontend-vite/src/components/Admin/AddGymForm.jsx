@@ -8,27 +8,26 @@ const AddGymForm = ({ onAddGym }) => {
   const [managerName, setManagerName] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPassword, setManagerPassword] = useState("");
+  const [logo, setLogo] = useState(null);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const newGym = { 
-        gymName, 
-        location, 
-        price, 
-        manager: {
-          name: managerName,
-          email: managerEmail,
-          password: managerPassword,
-        }
-      };
+      const formData = new FormData();
+      formData.append("gymName", gymName);
+      formData.append("location", location);
+      formData.append("price", price);
+      formData.append("managerName", managerName);
+      formData.append("managerEmail", managerEmail);
+      formData.append("managerPassword", managerPassword);
+      if (logo) formData.append("logo", logo); // Append logo file if uploaded
 
-      // Call your API function to add the gym with its manager's details
-      const response = await addGymWithManager(newGym);
+      // Call API function to add gym with FormData (including image)
+      const response = await addGymWithManager(formData);
       onAddGym(response.data);
-      
+
       // Reset form fields after successful submission
       setGymName("");
       setLocation("");
@@ -36,6 +35,7 @@ const AddGymForm = ({ onAddGym }) => {
       setManagerName("");
       setManagerEmail("");
       setManagerPassword("");
+      setLogo(null);
     } catch (err) {
       setError("Failed to add gym");
       console.error(err);
@@ -43,7 +43,7 @@ const AddGymForm = ({ onAddGym }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} encType="multipart/form-data">
       <div>
         <input
           type="text"
@@ -81,9 +81,33 @@ const AddGymForm = ({ onAddGym }) => {
         />
       </div>
       <div>
-      <input type="email" name="managerEmail" placeholder="Manager Email" value={managerEmail} onChange={(e) => setManagerEmail(e.target.value)} autoComplete="off" />
-<input type="password" name="managerPassword" placeholder="Manager Password" value={managerPassword} onChange={(e) => setManagerPassword(e.target.value)} autoComplete="new-password" />
-
+        <input
+          type="email"
+          name="managerEmail"
+          placeholder="Manager Email"
+          value={managerEmail}
+          onChange={(e) => setManagerEmail(e.target.value)}
+          autoComplete="off"
+          required
+        />
+      </div>
+      <div>
+        <input
+          type="password"
+          name="managerPassword"
+          placeholder="Manager Password"
+          value={managerPassword}
+          onChange={(e) => setManagerPassword(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
+      </div>
+      <div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setLogo(e.target.files[0])}
+        />
       </div>
       <button type="submit">Add Gym</button>
 

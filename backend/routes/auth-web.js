@@ -1,15 +1,18 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 import User from '../models/User.js';
+
+dotenv.config();  // Load environment variables
 
 const router = express.Router();
 
-// Predefined login credentials for admin
+// Predefined admin credentials (Replace this with a secure database check in production)
 const adminCredentials = {
   email: 'ymebratu64@gmail.com',
   password: 'YoniReact1@mom',
-  role: 'admin'
+  role: 'admin',
 };
 
 // Login route for the web
@@ -17,60 +20,66 @@ router.post('/web/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
-    // Validate inputs
+    // Validate input
     if (!email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check if the role is admin and use predefined credentials
+    // Handle admin login
     if (role === 'admin') {
       if (email !== adminCredentials.email || password !== adminCredentials.password) {
         return res.status(400).json({ message: 'Invalid admin credentials' });
       }
-      
-      // Admin credentials match, create a token and respond
+
+      // Generate JWT token for admin
       const token = jwt.sign(
-        { userId: 'admin', role: 'admin' },  // Admin info
+        { userId: 'admin', role: 'admin' },
         process.env.JWT_SECRET,
-        { expiresIn: '1h' } // Token expiration time
+        { expiresIn: '1h' }
       );
 
-      return res.json({
-        token,
-        role: 'admin',
-      });
+      return res.json({ token, role: 'admin' });
     }
 
-    // If not admin, check for user in database by email and role
+    // Handle user login (non-admin)
     const user = await User.findOne({ email, role });
-
     if (!user) {
       return res.status(400).json({ message: 'User not found or incorrect role' });
     }
 
-    // Compare the hashed password with the user's stored password
+    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Sign a JWT token with user info and role
+    // Generate JWT token for user
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    // Return the token and role to the frontend
-    res.json({
-      token,
-      role: user.role,
-    });
+    res.json({ token, role: user.role });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
+// Middleware to authenticate users via JWT token
+const authenticate = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+};
+
+export { authenticate };
 export default router;
