@@ -1,29 +1,30 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useContext, useState } from 'react';
 
-const AuthContext = createContext();
+// Create AuthContext
+const AuthContext = createContext(null);
 
-export const useAuth = () => useContext(AuthContext);
-
+// AuthProvider Component
 export const AuthProvider = ({ children }) => {
-  const [authState, setAuthState] = useState({
-    token: sessionStorage.getItem("authToken") || null,
-    role: sessionStorage.getItem("role") || null,
-  });
+  const [user, setUser] = useState(null);
 
-  const login = (authData) => {
-    setAuthState(authData);
-    sessionStorage.setItem("authToken", authData.token);
-    sessionStorage.setItem("role", authData.role);
-  };
+  // Login function to set user data
+  const login = (userData) => setUser(userData);
 
-  const logout = () => {
-    setAuthState({ token: null, role: null });
-    sessionStorage.clear();
-  };
+  // Logout function to clear user data
+  const logout = () => setUser(null);
 
   return (
-    <AuthContext.Provider value={{ authState, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Custom hook to use AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

@@ -59,14 +59,6 @@ const Login = () => {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.clear();
-    login({ token: null, role: null });
-    setEmail('');
-    setPassword('');
-    setRole('');
-  };
-
   return (
     <div className="login-container">
       <h2>Login</h2>
@@ -102,12 +94,7 @@ const Login = () => {
           </select>
           <button type="submit" className="login-button">Login</button>
         </form>
-      ) : (
-        <div className="welcome-container">
-          <h2>Welcome, {role.charAt(0).toUpperCase() + role.slice(1)}!</h2>
-          <button onClick={handleLogout} className="logout-button">Logout</button>
-        </div>
-      )}
+      ) : null}
 
       {errorMessage && <p className="error-message">{errorMessage}</p>}
     </div>

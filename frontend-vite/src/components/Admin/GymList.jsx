@@ -1,42 +1,41 @@
-import React from "react";
-import DeleteGymButton from "./DeleteGymButton";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import GymList from "./GymList";  // Make sure to import GymList
 
-const GymList = ({ gyms, onDeleteGym }) => {
+const GymDashboard = () => {
+  const [gyms, setGyms] = useState([]);
+
+  useEffect(() => {
+    // Fetch the gyms from the backend when the component mounts
+    const fetchGyms = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/gyms");
+        setGyms(response.data); // Assuming the gyms are returned as an array
+      } catch (error) {
+        console.error("Error fetching gyms:", error);
+      }
+    };
+
+    fetchGyms();
+  }, []);
+
+  const handleDeleteGym = async (gymId) => {
+    try {
+      // Make an API request to delete the gym by its ID
+      await axios.delete(`http://localhost:5000/api/gyms/${gymId}`);
+      // Update the state to remove the deleted gym from the list
+      setGyms(gyms.filter(gym => gym._id !== gymId));
+    } catch (error) {
+      console.error("Error deleting gym:", error);
+    }
+  };
+
   return (
-    <div className="gym-list">
-      {gyms.map((gym) => (
-        <div key={gym._id} className="gym-card">
-          <h3>{gym.gymName}</h3>
-          <p>{gym.location}</p>
-          <p>Price: ${gym.price}</p>
-          <p>Manager: {gym.manager.name}</p>
-          <DeleteGymButton gymId={gym._id} onDelete={onDeleteGym} />
-        </div>
-      ))}
-
-      <style jsx>{`
-        .gym-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-          justify-content: center;
-        }
-
-        .gym-card {
-          background: #fff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          width: 200px;
-          transition: transform 0.3s;
-        }
-
-        .gym-card:hover {
-          transform: scale(1.05);
-        }
-      `}</style>
+    <div>
+      <h2>Gym Dashboard</h2>
+      <GymList gyms={gyms} onDeleteGym={handleDeleteGym} />
     </div>
   );
 };
 
-export default GymList;
+export default GymDashboard;
