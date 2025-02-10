@@ -1,13 +1,14 @@
 import axios from "axios";
 
-// Create an axios instance with a base URL for development and production
+// Create axios instance with proxy-aware base URL
 const API = axios.create({
   baseURL: process.env.NODE_ENV === "development"
-    ? "http://localhost:5000/"
-    : "https://gym-pro5.vercel.app/", // ✅ Ensure `/api` is included
+    ? "/api"  // Proxy through Vite in development
+    : "https://gym-pro5.vercel.app/",
+  withCredentials: true,
 });
 
-// Attach JWT token to requests
+// Request interceptor for auth headers
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -16,88 +17,52 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token expiry
+// Enhanced response interceptor
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    console.error('API Error:', {
+      config: error.config,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+
+    if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/login"; // Redirect to login on token expiry
+      window.location.href = "/login";
     }
-    return Promise.reject(error);
+    
+    return Promise.reject(
+      error.response?.data?.message || "An unexpected error occurred."
+    );
   }
 );
 
-// Fetch Trainers for a Specific Gym
-export const fetchTrainers = async (gymId) => {
-  try {
-    const response = await API.get(`/gym/${gymId}/trainers`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-
-
-// Delete a Trainer
-export const deleteTrainer = async (trainerId) => {
-  try {
-    const response = await API.delete(`/trainers/${trainerId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Example: Delete a trainee by their ID
-export const deleteTrainee = async (traineeId) => {
-  try {
-    const response = await API.delete(`/trainees/${traineeId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Example: Delete a Workout Plan by its ID
-export const deleteWorkoutPlan = async (planId) => {
-  try {
-    const response = await API.delete(`/workouts/${planId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Fetch Workout Plans for a specific gym
-export const fetchWorkoutPlansByGym = async (gymId) => {
-  try {
-    const response = await API.get(`/gym/${gymId}/workout-plans`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+// WebSocket helper
+export const createWebSocket = (path) => {
+  const base = process.env.NODE_ENV === "development" 
+    ? window.location.origin.replace(/^http/, 'ws') + '/api'
+    : 'wss://gym-pro5.vercel.app';
+  return new WebSocket(`${base}${path}`);
 };
 
 // 🏛️ Admin Endpoints
-// Corrected to remove `/admin` and point to `/gyms`
 export const addGymWithManager = async (gymData) => {
   try {
-    const response = await API.post("/gym", gymData); // Changed `/admin/gyms` to `/gyms`
+    const response = await API.post("/gym", gymData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
-// Corrected to remove `/admin` and point to `/gyms`
 export const deleteGym = async (gymId) => {
   try {
-    const response = await API.delete(`/gym/${gymId}`); // Changed `/admin/gyms/${gymId}` to `/gyms/${gymId}`
+    const response = await API.delete(`/gym/${gymId}`);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
@@ -107,7 +72,7 @@ export const addTrainer = async (trainerData) => {
     const response = await API.post("/manager/trainers", trainerData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
@@ -116,7 +81,7 @@ export const updatePrices = async (prices) => {
     const response = await API.put("/manager/prices", prices);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
@@ -125,8 +90,8 @@ export const updateLocation = async (location) => {
     const response = await API.put("/manager/location", location);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
-  }   
+    throw error;
+  }
 };
 
 // 🏋️‍♂️ Trainer Endpoints
@@ -135,7 +100,7 @@ export const addWorkoutPlan = async (planData) => {
     const response = await API.post("/trainer/workouts", planData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
@@ -145,7 +110,7 @@ export const login = async (credentials) => {
     const response = await API.post("/auth/login", credentials);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Login failed.");
+    throw error;
   }
 };
 
@@ -154,21 +119,20 @@ export const register = async (userData) => {
     const response = await API.post("/auth/register", userData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || "An unexpected error occurred.");
+    throw error;
   }
 };
 
-// Fetch Gyms
+// 📦 Data Fetching
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/gym"); // No change needed here
+    const response = await API.get("/gym");
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-// Fetch Trainees
 export const fetchTrainees = async () => {
   try {
     const response = await API.get("/trainees");
@@ -178,10 +142,56 @@ export const fetchTrainees = async () => {
   }
 };
 
-// Logout function (clears the token and redirects to login)
+export const fetchTrainers = async (gymId) => {
+  try {
+    const response = await API.get(`/gym/${gymId}/trainers`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchWorkoutPlansByGym = async (gymId) => {
+  try {
+    const response = await API.get(`/gym/${gymId}/workout-plans`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ❌ Delete Operations
+export const deleteTrainer = async (trainerId) => {
+  try {
+    const response = await API.delete(`/trainers/${trainerId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteTrainee = async (traineeId) => {
+  try {
+    const response = await API.delete(`/trainees/${traineeId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteWorkoutPlan = async (planId) => {
+  try {
+    const response = await API.delete(`/workouts/${planId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 🚪 Logout
 export const logout = (navigate) => {
   localStorage.removeItem("token");
-  navigate("/login");
+  if (navigate) navigate("/login");
 };
 
 export default API;

@@ -3,30 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { fetchGyms, deleteGym } from "../../api/api";
 import GymList from "./GymList";
 import AddGymForm from "./AddGymForm";
-import "../../AdminDashboard.css"; // Import external CSS file
+import "../../AdminDashboard.css";
 
 const AdminDashboard = () => {
   const [gyms, setGyms] = useState([]);
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); // Initialize navigate
+  const [loading, setLoading] = useState(true); // Added loading state
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadGyms = async () => {
       try {
-        const response = await fetchGyms(); // Fetch gyms from '/api/gym' endpoint
-        setGyms(response.data); // Populate gyms list
+        const response = await fetchGyms();
+        // Ensure we always set an array even if response.data is undefined
+        setGyms(Array.isArray(response?.data) ? response.data : []);
       } catch (err) {
         setError("Failed to fetch gyms");
         console.error(err);
+      } finally {
+        setLoading(false); // Update loading state when done
       }
     };
-    loadGyms(); // Call to load gyms when component mounts
-  }, []); // Empty dependency array ensures this runs once
+    loadGyms();
+  }, []);
 
   const handleDeleteGym = async (gymId) => {
     try {
-      await deleteGym(gymId); // Call to delete gym
-      setGyms(gyms.filter((gym) => gym._id !== gymId)); // Remove deleted gym from the list
+      await deleteGym(gymId);
+      setGyms(prev => prev.filter(gym => gym._id !== gymId));
     } catch (error) {
       setError("Failed to delete gym");
       console.error("Error deleting gym", error);
@@ -34,10 +38,13 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.clear(); // Clear session data
-    navigate("/login", { replace: true }); // Navigate to login page
-    window.location.reload(); // Optionally reload the page
+    sessionStorage.clear();
+    navigate("/login", { replace: true });
   };
+
+  if (loading) {
+    return <div className="loading">Loading gyms...</div>;
+  }
 
   return (
     <div className="admin-dashboard">
@@ -56,12 +63,13 @@ const AdminDashboard = () => {
 
       <div className="content">
         <h2 id="add-gym">Add a New Gym</h2>
-        <AddGymForm /> {/* Gym form for adding a new gym */}
+        <AddGymForm />
 
         <h2 id="manage-gyms">Manage Gyms</h2>
         {error && <p className="error-message">{error}</p>}
 
-        {gyms.length === 0 ? (
+        {/* Safe array check using optional chaining */}
+        {!gyms?.length ? (
           <p>No gyms found.</p>
         ) : (
           <GymList gyms={gyms} onDeleteGym={handleDeleteGym} />
