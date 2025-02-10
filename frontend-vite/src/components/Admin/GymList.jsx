@@ -9,7 +9,7 @@ const GymDashboard = () => {
     // Fetch the gyms from the backend when the component mounts
     const fetchGyms = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/gyms");
+        const response = await axios.get("http://localhost:5000/api/gym");
         setGyms(response.data); // Assuming the gyms are returned as an array
       } catch (error) {
         console.error("Error fetching gyms:", error);
@@ -22,7 +22,7 @@ const GymDashboard = () => {
   const handleDeleteGym = async (gymId) => {
     try {
       // Make an API request to delete the gym by its ID
-      await axios.delete(`http://localhost:5000/api/gyms/${gymId}`);
+      await axios.delete(`http://localhost:5000/api/gym/${gymId}`);
       // Update the state to remove the deleted gym from the list
       setGyms(gyms.filter(gym => gym._id !== gymId));
     } catch (error) {
