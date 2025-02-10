@@ -13,9 +13,14 @@ const gymSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  manager: {
-    type: String,
+  logo: {
+    type: String, // Store the image as a URL
     required: true
+  },
+  manager: {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
   }
 });
 

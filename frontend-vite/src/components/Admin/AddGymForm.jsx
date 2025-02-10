@@ -11,6 +11,10 @@ const AddGymForm = ({ onAddGym }) => {
   const [logo, setLogo] = useState(null);
   const [error, setError] = useState("");
 
+  const handleFileChange = (e) => {
+    setLogo(e.target.files[0]); // Store selected file
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -22,13 +26,15 @@ const AddGymForm = ({ onAddGym }) => {
       formData.append("managerName", managerName);
       formData.append("managerEmail", managerEmail);
       formData.append("managerPassword", managerPassword);
-      if (logo) formData.append("logo", logo); // Append logo file if uploaded
+      if (logo) {
+        formData.append("logo", logo); // Append the file
+      }
 
-      // Call API function to add gym with FormData (including image)
+      // Call API to add the gym
       const response = await addGymWithManager(formData);
       onAddGym(response.data);
 
-      // Reset form fields after successful submission
+      // Reset form
       setGymName("");
       setLocation("");
       setPrice("");
@@ -83,7 +89,6 @@ const AddGymForm = ({ onAddGym }) => {
       <div>
         <input
           type="email"
-          name="managerEmail"
           placeholder="Manager Email"
           value={managerEmail}
           onChange={(e) => setManagerEmail(e.target.value)}
@@ -94,7 +99,6 @@ const AddGymForm = ({ onAddGym }) => {
       <div>
         <input
           type="password"
-          name="managerPassword"
           placeholder="Manager Password"
           value={managerPassword}
           onChange={(e) => setManagerPassword(e.target.value)}
@@ -103,11 +107,7 @@ const AddGymForm = ({ onAddGym }) => {
         />
       </div>
       <div>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setLogo(e.target.files[0])}
-        />
+        <input type="file" accept="image/*" onChange={handleFileChange} required />
       </div>
       <button type="submit">Add Gym</button>
 
