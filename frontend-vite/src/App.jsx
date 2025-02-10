@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
 
-
+import HomePage from './pages/HomePage';
 import AdminDashboard from './components/Admin/AdminDashboard';  // Adjust according to your component names
 import ManagerDashboard from './components/Manager/ManagerDashboard';
 import TrainerDashboard from './components/Trainer/TrainerDashboard';
@@ -15,16 +15,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Start with the login page */}
+        {/* Default route: Redirect to login if no user */}
         <Route 
           path="/" 
-          element={<Navigate to="/login" />}  // Redirect directly to the login page on first load
+          element={user ? <HomePage /> : <Navigate to="/login" />} 
         />
         
         {/* Login route: If user is logged in, redirect to their dashboard */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to={`/${user.role}/Dashboard`} /> : <Login />} 
+          element={user ? <Navigate to={`/${user.role}/AdminDashboard`} /> : <Login />} 
         />
 
         {/* Protected routes for specific roles */}

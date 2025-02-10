@@ -81,22 +81,9 @@ const AddGymForm = ({ onAddGym }) => {
         />
       </div>
       <div>
-        <input
-          type="email"
-          placeholder="Manager Email"
-          value={managerEmail}
-          onChange={(e) => setManagerEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="password"
-          placeholder="Manager Password"
-          value={managerPassword}
-          onChange={(e) => setManagerPassword(e.target.value)}
-          required
-        />
+      <input type="email" name="managerEmail" placeholder="Manager Email" value={managerEmail} onChange={(e) => setManagerEmail(e.target.value)} autoComplete="off" />
+<input type="password" name="managerPassword" placeholder="Manager Password" value={managerPassword} onChange={(e) => setManagerPassword(e.target.value)} autoComplete="new-password" />
+
       </div>
       <button type="submit">Add Gym</button>
 

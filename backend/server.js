@@ -12,14 +12,15 @@ const app = express();
 
 // Load environment variables
 dotenv.config();
-
 // CORS Configuration - Allow both local and production
-const allowedOrigins = ["http://gym-pro5.vercel.app", "http://localhost:3000"];
+const allowedOrigins = ["http://gym-pro5.vercel.app", "http://localhost:5173"];
+
 app.use(cors({
   origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
+
 
 // Middleware to parse request body
 app.use(express.json());
