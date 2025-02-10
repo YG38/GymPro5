@@ -1,0 +1,128 @@
+/* global.css */
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Color variables */
+  --primary-color: #2563eb;    /* Blue-600 */
+  --secondary-color: #4f46e5;  /* Indigo-600 */
+  --success-color: #16a34a;    /* Green-600 */
+  --warning-color: #ea580c;    /* Orange-600 */
+  --danger-color: #dc2626;     /* Red-600 */
+  --light-color: #f8fafc;      /* Slate-50 */
+  --dark-color: #0f172a;       /* Slate-900 */
+  
+  /* Spacing variables */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+}
+
+/* Typography */
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+  color: var(--dark-color);
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+/* Links */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--secondary-color);
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+/* Forms */
+input,
+textarea,
+select {
+  padding: var(--spacing-xs);
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  width: 100%;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Utility classes */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+}
