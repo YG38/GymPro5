@@ -1,16 +1,15 @@
 module.exports = {
     resolve: {
       fallback: {
-        "crypto": require.resolve("crypto-browserify"),
-        "path": require.resolve("path-browserify"),
-        "querystring": require.resolve("querystring-es3"),
-        "stream": require.resolve("stream-browserify"),
-        "http": require.resolve("stream-http"),
         "zlib": require.resolve("browserify-zlib"),
-        "fs": false, // To ignore 'fs' module as it's not needed for the browser
-        "net": false, // To ignore 'net' module
+        "querystring": require.resolve("querystring-es3"),
+        "path": require.resolve("path-browserify"),
+        "crypto": require.resolve("crypto-browserify"),
+        "stream": require.resolve("stream-browserify"),
+        "fs": false,  // Not needed in the browser
+        "http": false,  // Not needed in the browser
+        "net": false  // Not needed in the browser
       }
-    },
-    // Other webpack configuration...
+    }
   };
   
