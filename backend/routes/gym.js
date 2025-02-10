@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Endpoint to add a new gym with a logo
-router.post("/api/gyms", upload.single("logo"), async (req, res) => {
+router.post("/api/gym", upload.single("logo"), async (req, res) => {
   const { gymName, location, price, managerName, managerEmail, managerPassword } = req.body;
 
   try {

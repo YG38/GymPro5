@@ -3,8 +3,8 @@ import axios from "axios";
 // Create an axios instance with a base URL for development and production
 const API = axios.create({
   baseURL: process.env.NODE_ENV === "development"
-    ? "http://localhost:5000/api"
-    : "https://gym-pro5.vercel.app/api", // ✅ Ensure `/api` is included
+    ? "http://localhost:5000/"
+    : "https://gym-pro5.vercel.app/", // ✅ Ensure `/api` is included
 });
 
 // Attach JWT token to requests
@@ -31,12 +31,14 @@ API.interceptors.response.use(
 // Fetch Trainers for a Specific Gym
 export const fetchTrainers = async (gymId) => {
   try {
-    const response = await API.get(`/gyms/${gymId}/trainers`);
+    const response = await API.get(`/gym/${gymId}/trainers`);
     return response.data;
   } catch (error) {
     throw error;
   }
 };
+
+
 
 // Delete a Trainer
 export const deleteTrainer = async (trainerId) => {
@@ -71,7 +73,7 @@ export const deleteWorkoutPlan = async (planId) => {
 // Fetch Workout Plans for a specific gym
 export const fetchWorkoutPlansByGym = async (gymId) => {
   try {
-    const response = await API.get(`/gyms/${gymId}/workout-plans`);
+    const response = await API.get(`/gym/${gymId}/workout-plans`);
     return response.data;
   } catch (error) {
     throw error;
@@ -79,18 +81,20 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
 };
 
 // 🏛️ Admin Endpoints
+// Corrected to remove `/admin` and point to `/gyms`
 export const addGymWithManager = async (gymData) => {
   try {
-    const response = await API.post("/admin/gyms", gymData);
+    const response = await API.post("/gym", gymData); // Changed `/admin/gyms` to `/gyms`
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "An unexpected error occurred.");
   }
 };
 
+// Corrected to remove `/admin` and point to `/gyms`
 export const deleteGym = async (gymId) => {
   try {
-    const response = await API.delete(`/admin/gyms/${gymId}`);
+    const response = await API.delete(`/gym/${gymId}`); // Changed `/admin/gyms/${gymId}` to `/gyms/${gymId}`
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "An unexpected error occurred.");
@@ -157,7 +161,7 @@ export const register = async (userData) => {
 // Fetch Gyms
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/gyms");
+    const response = await API.get("/gym"); // No change needed here
     return response.data;
   } catch (error) {
     throw error;

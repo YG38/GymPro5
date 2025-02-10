@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import { fetchGyms, deleteGym } from "../../api/api";
 import GymList from "./GymList";
 import AddGymForm from "./AddGymForm";
-import '../../AdminDashboard.css'; // Import the external CSS file
+import "../../AdminDashboard.css"; // Import external CSS file
 
 const AdminDashboard = () => {
   const [gyms, setGyms] = useState([]);
@@ -13,20 +13,20 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadGyms = async () => {
       try {
-        const response = await fetchGyms();
-        setGyms(response.data);
+        const response = await fetchGyms(); // Fetch gyms from '/api/gym' endpoint
+        setGyms(response.data); // Populate gyms list
       } catch (err) {
         setError("Failed to fetch gyms");
         console.error(err);
       }
     };
-    loadGyms();
-  }, []);
+    loadGyms(); // Call to load gyms when component mounts
+  }, []); // Empty dependency array ensures this runs once
 
   const handleDeleteGym = async (gymId) => {
     try {
-      await deleteGym(gymId);
-      setGyms(gyms.filter((gym) => gym._id !== gymId));
+      await deleteGym(gymId); // Call to delete gym
+      setGyms(gyms.filter((gym) => gym._id !== gymId)); // Remove deleted gym from the list
     } catch (error) {
       setError("Failed to delete gym");
       console.error("Error deleting gym", error);
@@ -35,11 +35,10 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     sessionStorage.clear(); // Clear session data
-    login({ token: null, role: null }); // Clear auth context
-    navigate("/login", { replace: true });
-    window.location.reload();
+    navigate("/login", { replace: true }); // Navigate to login page
+    window.location.reload(); // Optionally reload the page
   };
-  
+
   return (
     <div className="admin-dashboard">
       <nav className="navbar">
@@ -57,7 +56,7 @@ const AdminDashboard = () => {
 
       <div className="content">
         <h2 id="add-gym">Add a New Gym</h2>
-        <AddGymForm />
+        <AddGymForm /> {/* Gym form for adding a new gym */}
 
         <h2 id="manage-gyms">Manage Gyms</h2>
         {error && <p className="error-message">{error}</p>}
