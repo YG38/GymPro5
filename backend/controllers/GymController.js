@@ -1,12 +1,13 @@
-const Gym = require("./models/Gym"); // Assuming Gym model is already defined
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" }); // Adjust destination folder as necessary
+import Gym from '../models/Gym.js';  // Adjust path to your Gym model
+import multer from 'multer';
 
-// Function to handle gym creation
+const upload = multer({ dest: 'uploads/' }); // Set up multer for handling file uploads
+
+// Handle the POST request for adding a gym
 const addGym = async (req, res) => {
   try {
     const { gymName, location, price, managerName, managerEmail, managerPassword } = req.body;
-    const logo = req.file ? req.file.path : null; // Handle logo if uploaded
+    const logo = req.file ? req.file.path : null;  // Handle logo if uploaded
 
     const newGym = new Gym({
       gymName,
@@ -18,14 +19,14 @@ const addGym = async (req, res) => {
       logo,
     });
 
-    await newGym.save();
-    res.status(200).send({ message: "Gym added successfully", data: newGym });
+    await newGym.save();  // Save the gym to the database
+    res.status(200).send({ message: 'Gym added successfully', data: newGym });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: "Failed to add gym" });
+    res.status(500).send({ message: 'Failed to add gym' });
   }
 };
 
-module.exports = {
+export default {
   addGym,
 };
