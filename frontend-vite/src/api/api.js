@@ -8,7 +8,6 @@ const API = axios.create({
   withCredentials: true,
 });
 
-
 // Request interceptor for auth headers
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -33,7 +32,7 @@ API.interceptors.response.use(
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
-    
+
     return Promise.reject(
       error.response?.data?.message || "An unexpected error occurred."
     );
