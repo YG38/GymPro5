@@ -1,30 +1,36 @@
 import mongoose from 'mongoose';
 
-const gymSchema = new mongoose.Schema({
+// Define Gym schema
+const GymSchema = new mongoose.Schema({
   gymName: {
     type: String,
-    required: true
+    required: true,
   },
   location: {
     type: String,
-    required: true
+    required: true,
   },
   price: {
     type: Number,
-    required: true
+    required: true,
+  },
+  managerName: {
+    type: String,
+    required: true,
+  },
+  managerEmail: {
+    type: String,
+    required: true,
+  },
+  managerPassword: {
+    type: String,
+    required: true,
   },
   logo: {
-    type: String, // Store the image as a URL
-    required: true
+    type: String, // Path to the logo image (stored in 'uploads/gym_logos' folder)
+    required: false,
   },
-  manager: {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
-  }
 });
 
-const Gym = mongoose.model('Gym', gymSchema);
-
-// Default export
+const Gym = mongoose.model('Gym', GymSchema); // Create and export Gym model
 export default Gym;
