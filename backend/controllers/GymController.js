@@ -1,15 +1,26 @@
-import Gym from '../models/Gym.js';  // Adjust path to your Gym model
 import multer from 'multer';
+import Gym from '../models/Gym.js'; // Adjust the path as per your project structure
 
-const upload = multer({ dest: 'uploads/' }); // Set up multer for handling file uploads
+// Set up multer for logo file handling
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/gym_logos'); // Folder to store logos
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname); // Unique filename
+  }
+});
 
-// Handle the POST request for adding a gym
-const addGym = async (req, res) => {
+const upload = multer({ storage: storage });
+
+// Create Gym
+const createGym = async (req, res) => {
+  const { gymName, location, price, managerName, managerEmail, managerPassword } = req.body;
+  const logo = req.file ? req.file.path : null; // Handle logo upload, if any
+
   try {
-    const { gymName, location, price, managerName, managerEmail, managerPassword } = req.body;
-    const logo = req.file ? req.file.path : null;  // Handle logo if uploaded
-
-    const newGym = new Gym({
+    // Create the gym document
+    const gym = new Gym({
       gymName,
       location,
       price,
@@ -19,14 +30,16 @@ const addGym = async (req, res) => {
       logo,
     });
 
-    await newGym.save();  // Save the gym to the database
-    res.status(200).send({ message: 'Gym added successfully', data: newGym });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: 'Failed to add gym' });
+    // Save to the database
+    const savedGym = await gym.save();
+    res.status(201).json(savedGym);
+  } catch (error) {
+    console.error("Error creating gym:", error);
+    res.status(400).json({ error: error.message });
   }
 };
 
+// Export controllers for use in your routes
 export default {
-  addGym,
+  createGym,
 };

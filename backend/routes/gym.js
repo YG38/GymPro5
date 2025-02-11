@@ -1,16 +1,22 @@
 import express from 'express';
-import Gym from '../models/Gym.js'; // Assuming you have a Gym model
+import GymController from '../controllers/GymController.js'; // Import GymController
+import multer from 'multer';
 
-const router = express.Router();
-
-// GET /api/gym - Fetch all gyms
-router.get('/', async (req, res) => {
-    try {
-        const gyms = await Gym.find(); // Fetch gyms from MongoDB
-        res.json(gyms); // Send response as JSON
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+// Set up multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/gym_logos'); // Folder where logos will be stored
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname); // Unique filename based on timestamp
+  }
 });
 
-export default router;
+const upload = multer({ storage: storage });
+const router = express.Router();
+
+// POST endpoint to create a gym with logo upload
+router.post('/gym', upload.single('logo'), GymController.createGym);
+
+export default router; // Export router for use in your server
+e
