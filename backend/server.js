@@ -5,7 +5,7 @@ import cors from 'cors';
 import gymRoutes from './routes/gym.js';
 import authRoutes from './routes/auth.js'; // For Android app authentication
 import authWebRoutes from './routes/auth-web.js'; // For React web authentication
-
+import GymController from './controllers/GymController.js';
 // Initialize express app
 const app = express();
 
@@ -64,10 +64,7 @@ app.use('/api/auth', authRoutes); // Android app authentication
 app.use('/api/auth-web', authWebRoutes); // Web app authentication
 app.use('/api', gymRoutes); // Use gym routes at '/api'
 
-app.post('/api/gym', (req, res) => {
-  // Handle the creation of a gym
-  res.status(200).send({ message: 'Gym added successfully' });
-});
+app.post('/api/gym', GymController.addGym);  // Using addGym method from GymController
 
 // Global Error Handling
 app.use((err, req, res, next) => {
