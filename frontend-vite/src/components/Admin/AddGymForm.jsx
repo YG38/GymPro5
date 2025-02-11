@@ -1,18 +1,19 @@
 import React, { useState } from "react";
-import { addGymWithManager } from "../../api/api"; 
-import "../../AdminDashboard.css"; 
+import { addGymWithManager } from "../../api/api"; // Import the updated API function
+import "../../AdminDashboard.css"; // Import the external CSS file
 
 const AddGymForm = ({ onAddGym }) => {
   const [gymName, setGymName] = useState("");
   const [location, setLocation] = useState("");
   const [price, setPrice] = useState("");
+  const [managerName, setManagerName] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPassword, setManagerPassword] = useState("");
   const [logo, setLogo] = useState(null);
   const [error, setError] = useState("");
 
   const handleFileChange = (e) => {
-    setLogo(e.target.files[0]); 
+    setLogo(e.target.files[0]); // Store the selected file (logo)
   };
 
   const handleSubmit = async (e) => {
@@ -20,22 +21,25 @@ const AddGymForm = ({ onAddGym }) => {
 
     try {
       const formData = new FormData();
-      formData.append("gymName", gymName);  
+      formData.append("gymName", gymName);
       formData.append("location", location);
+      formData.append("price", price);
+      formData.append("managerName", managerName);
       formData.append("managerEmail", managerEmail);
-      formData.append("managerPassword", managerPassword);  
+      formData.append("managerPassword", managerPassword);
       if (logo) {
-        formData.append("logo", logo);  
+        formData.append("logo", logo); // Append the logo file if provided
       }
 
-      // Call API to add gym
-      const response = await addGymWithManager(formData);  
-      onAddGym(response);  
+      // Call the API to add the gym
+      const response = await addGymWithManager(formData);  // This now works with the updated API call
+      onAddGym(response.data);  // Pass the response data to the parent component
 
-      // Reset form
+      // Reset the form
       setGymName("");
       setLocation("");
       setPrice("");
+      setManagerName("");
       setManagerEmail("");
       setManagerPassword("");
       setLogo(null);
@@ -62,6 +66,24 @@ const AddGymForm = ({ onAddGym }) => {
           placeholder="Location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <input
+          type="text"
+          placeholder="Price"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <input
+          type="text"
+          placeholder="Manager Name"
+          value={managerName}
+          onChange={(e) => setManagerName(e.target.value)}
           required
         />
       </div>
