@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addGymWithManager } from "../../api/api";
+import { addGymWithManager } from "../../api/api"; // Import the updated API function
 import "../../AdminDashboard.css"; // Import the external CSS file
 
 const AddGymForm = ({ onAddGym }) => {
@@ -13,7 +13,7 @@ const AddGymForm = ({ onAddGym }) => {
   const [error, setError] = useState("");
 
   const handleFileChange = (e) => {
-    setLogo(e.target.files[0]); // Store selected file
+    setLogo(e.target.files[0]); // Store the selected file (logo)
   };
 
   const handleSubmit = async (e) => {
@@ -28,14 +28,14 @@ const AddGymForm = ({ onAddGym }) => {
       formData.append("managerEmail", managerEmail);
       formData.append("managerPassword", managerPassword);
       if (logo) {
-        formData.append("logo", logo); // Append the file
+        formData.append("logo", logo); // Append the logo file if provided
       }
 
-      // Call API to add the gym
-      const response = await addGymWithManager(formData);
-      onAddGym(response.data);
+      // Call the API to add the gym
+      const response = await addGymWithManager(formData);  // This now works with the updated API call
+      onAddGym(response.data);  // Pass the response data to the parent component
 
-      // Reset form
+      // Reset the form
       setGymName("");
       setLocation("");
       setPrice("");
@@ -44,7 +44,7 @@ const AddGymForm = ({ onAddGym }) => {
       setManagerPassword("");
       setLogo(null);
     } catch (err) {
-      setError("Failed to add gym");
+      setError("Failed to add gym: " + err.message);
       console.error(err);
     }
   };
