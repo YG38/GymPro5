@@ -16,7 +16,6 @@ const upload = multer({ storage: storage });
 const router = express.Router();
 
 // POST endpoint to create a gym with logo upload
-router.post('/gym', upload.single('logo'), GymController.createGym);
+router.post('api/gym', upload.single('logo'), GymController.createGym);
 
 export default router; // Export router for use in your server
-e

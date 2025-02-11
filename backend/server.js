@@ -2,10 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import gymRoutes from './routes/gym.js';
 import authRoutes from './routes/auth.js'; // For Android app authentication
 import authWebRoutes from './routes/auth-web.js'; // For React web authentication
-import GymController from './controllers/GymController.js';
+
 // Initialize express app
 const app = express();
 
@@ -52,19 +51,10 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.get('/', (req, res) => {
   res.json({ status: 'success', message: 'Welcome to GymPro5 API' });
 });
-// Health Check Endpoint (Add this above the root route)
-app.get('/health-check', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
-});
+
 // Separate authentication routes for Web & Android
 app.use('/api/auth', authRoutes); // Android app authentication
 app.use('/api/auth-web', authWebRoutes); // Web app authentication
-app.use('/api', gymRoutes); // Use gym routes at '/api'
-
-app.post('/api/gym', GymController.addGym);  // Using addGym method from GymController
 
 // Global Error Handling
 app.use((err, req, res, next) => {
