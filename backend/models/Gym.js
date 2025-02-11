@@ -26,5 +26,5 @@ const gymSchema = new mongoose.Schema({
 
 const Gym = mongoose.model('Gym', gymSchema);
 
-// Named export
-export { Gym };
+// Default export
+export default Gym;
