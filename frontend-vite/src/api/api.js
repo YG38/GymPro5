@@ -3,10 +3,11 @@ import axios from "axios";
 // Create axios instance with proxy-aware base URL
 const API = axios.create({
   baseURL: process.env.NODE_ENV === "development"
-    ? "/api"  // Proxy through Vite in development
-    : "https://gym-pro5.vercel.app/",
+    ? "http://localhost:5000/api"  // Set this to the local backend URL during development
+    : "https://gym-pro5.vercel.app", // Set this to the production backend URL
   withCredentials: true,
 });
+
 
 // Request interceptor for auth headers
 API.interceptors.request.use((config) => {
