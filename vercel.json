@@ -2,13 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend-vite/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
       "src": "backend/server.js",
       "use": "@vercel/node"
     }
@@ -17,10 +10,6 @@
     {
       "src": "/api/(.*)",
       "dest": "/backend/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend-vite/dist/$1"
     }
   ],
   "env": {
