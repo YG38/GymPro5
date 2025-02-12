@@ -1,119 +1,130 @@
 import React, { useState } from "react";
-import { addGymWithManager } from "../../api/api"; // Import the updated API function
-import "../../AdminDashboard.css"; // Import the external CSS file
+import { Form, Input, Button, Upload, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import { addGymWithManager } from "../../api/api";
 
 const AddGymForm = ({ onAddGym }) => {
-  const [gymName, setGymName] = useState("");
-  const [location, setLocation] = useState("");
-  const [price, setPrice] = useState("");
-  const [managerName, setManagerName] = useState("");
-  const [managerEmail, setManagerEmail] = useState("");
-  const [managerPassword, setManagerPassword] = useState("");
-  const [logo, setLogo] = useState(null);
-  const [error, setError] = useState("");
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
 
-  const handleFileChange = (e) => {
-    setLogo(e.target.files[0]); // Store the selected file (logo)
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const onFinish = async (values) => {
+    setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("gymName", gymName);
-      formData.append("location", location);
-      formData.append("price", price);
-      formData.append("managerName", managerName);
-      formData.append("managerEmail", managerEmail);
-      formData.append("managerPassword", managerPassword);
-      if (logo) {
-        formData.append("logo", logo); // Append the logo file if provided
+      Object.keys(values).forEach(key => {
+        if (key !== 'logo') {
+          formData.append(key, values[key]);
+        }
+      });
+
+      if (fileList.length > 0) {
+        formData.append('logo', fileList[0].originFileObj);
       }
 
-      // Call the API to add the gym
-      const response = await addGymWithManager(formData);  // This now works with the updated API call
-      onAddGym(response.data);  // Pass the response data to the parent component
-
-      // Reset the form
-      setGymName("");
-      setLocation("");
-      setPrice("");
-      setManagerName("");
-      setManagerEmail("");
-      setManagerPassword("");
-      setLogo(null);
-    } catch (err) {
-      setError("Failed to add gym: " + err.message);
-      console.error(err);
+      const response = await addGymWithManager(formData);
+      message.success('Gym added successfully!');
+      form.resetFields();
+      setFileList([]);
+      if (onAddGym) {
+        onAddGym(response.gym);
+      }
+    } catch (error) {
+      message.error('Failed to add gym: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} encType="multipart/form-data">
-      <div>
-        <input
-          type="text"
-          placeholder="Gym Name"
-          value={gymName}
-          onChange={(e) => setGymName(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="text"
-          placeholder="Location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="text"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="text"
-          placeholder="Manager Name"
-          value={managerName}
-          onChange={(e) => setManagerName(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="email"
-          placeholder="Manager Email"
-          value={managerEmail}
-          onChange={(e) => setManagerEmail(e.target.value)}
-          autoComplete="off"
-          required
-        />
-      </div>
-      <div>
-        <input
-          type="password"
-          placeholder="Manager Password"
-          value={managerPassword}
-          onChange={(e) => setManagerPassword(e.target.value)}
-          autoComplete="new-password"
-          required
-        />
-      </div>
-      <div>
-        <input type="file" accept="image/*" onChange={handleFileChange} required />
-      </div>
-      <button type="submit">Add Gym</button>
+  const uploadProps = {
+    beforeUpload: (file) => {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        message.error('You can only upload image files!');
+        return false;
+      }
+      return false;
+    },
+    onChange: ({ fileList }) => setFileList(fileList),
+    fileList,
+  };
 
-      {error && <p className="error-message">{error}</p>}
-    </form>
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={onFinish}
+      style={{ maxWidth: 600, margin: '0 auto' }}
+    >
+      <Form.Item
+        label="Gym Name"
+        name="gymName"
+        rules={[{ required: true, message: 'Please input the gym name!' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        label="Location"
+        name="location"
+        rules={[{ required: true, message: 'Please input the gym location!' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        label="Price"
+        name="price"
+        rules={[{ required: true, message: 'Please input the gym price!' }]}
+      >
+        <Input type="number" />
+      </Form.Item>
+
+      <Form.Item
+        label="Manager Name"
+        name="managerName"
+        rules={[{ required: true, message: 'Please input the manager name!' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        label="Manager Email"
+        name="managerEmail"
+        rules={[
+          { required: true, message: 'Please input the manager email!' },
+          { type: 'email', message: 'Please enter a valid email!' }
+        ]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        label="Manager Password"
+        name="managerPassword"
+        rules={[
+          { required: true, message: 'Please input the manager password!' },
+          { min: 6, message: 'Password must be at least 6 characters!' }
+        ]}
+      >
+        <Input.Password />
+      </Form.Item>
+
+      <Form.Item
+        label="Gym Logo"
+        name="logo"
+      >
+        <Upload {...uploadProps} maxCount={1}>
+          <Button icon={<UploadOutlined />}>Upload Logo</Button>
+        </Upload>
+      </Form.Item>
+
+      <Form.Item>
+        <Button type="primary" htmlType="submit" loading={loading} block>
+          Add Gym
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 

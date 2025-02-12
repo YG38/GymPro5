@@ -66,6 +66,33 @@ export const deleteGym = async (gymId) => {
   }
 };
 
+export const fetchGyms = async () => {
+  try {
+    const response = await API.get("/gym");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateGym = async (gymId, gymData) => {
+  try {
+    const response = await API.put(`/gym/${gymId}`, gymData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchGymById = async (gymId) => {
+  try {
+    const response = await API.get(`/gym/${gymId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // 👨‍💼 Manager Endpoints
 export const addTrainer = async (trainerData) => {
   try {
@@ -124,15 +151,6 @@ export const register = async (userData) => {
 };
 
 // 📦 Data Fetching
-export const fetchGyms = async () => {
-  try {
-    const response = await API.get("/gym");
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
 export const fetchTrainees = async () => {
   try {
     const response = await API.get("/trainees");
