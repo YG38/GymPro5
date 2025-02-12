@@ -53,7 +53,7 @@ function App() {
         />
 
         <Route 
-          path="/manager/dashboard/:gymId" 
+          path="/manager/dashboard/*" 
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <ManagerDashboard />

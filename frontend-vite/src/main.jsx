@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from 'antd';
+import 'antd/dist/reset.css';
 import './global.css'; 
 import App from './App';
 
