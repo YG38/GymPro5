@@ -12,25 +12,35 @@ const AddGymForm = ({ onAddGym }) => {
     setLoading(true);
     try {
       const formData = new FormData();
-      Object.keys(values).forEach(key => {
-        if (key !== 'logo') {
-          formData.append(key, values[key]);
-        }
-      });
+      
+      // Add all form values to FormData
+      formData.append('gymName', values.gymName);
+      formData.append('location', values.location);
+      formData.append('price', values.price);
+      formData.append('managerName', values.managerName);
+      formData.append('managerEmail', values.managerEmail);
+      formData.append('managerPassword', values.managerPassword);
 
+      // Add logo if present
       if (fileList.length > 0) {
         formData.append('logo', fileList[0].originFileObj);
       }
 
       const response = await addGymWithManager(formData);
-      message.success('Gym added successfully!');
-      form.resetFields();
-      setFileList([]);
-      if (onAddGym) {
-        onAddGym(response.gym);
+      
+      if (response.gym) {
+        message.success('Gym added successfully!');
+        form.resetFields();
+        setFileList([]);
+        if (onAddGym) {
+          onAddGym(response.gym);
+        }
+      } else {
+        throw new Error('Failed to add gym: Invalid response from server');
       }
     } catch (error) {
-      message.error('Failed to add gym: ' + error.message);
+      console.error('Error adding gym:', error);
+      message.error(error.response?.data?.error || error.message || 'Failed to add gym');
     } finally {
       setLoading(false);
     }
@@ -47,6 +57,7 @@ const AddGymForm = ({ onAddGym }) => {
     },
     onChange: ({ fileList }) => setFileList(fileList),
     fileList,
+    maxCount: 1,
   };
 
   return (
@@ -77,7 +88,7 @@ const AddGymForm = ({ onAddGym }) => {
         name="price"
         rules={[{ required: true, message: 'Please input the gym price!' }]}
       >
-        <Input type="number" />
+        <Input type="number" min={0} />
       </Form.Item>
 
       <Form.Item
@@ -114,7 +125,7 @@ const AddGymForm = ({ onAddGym }) => {
         label="Gym Logo"
         name="logo"
       >
-        <Upload {...uploadProps} maxCount={1}>
+        <Upload {...uploadProps} listType="picture">
           <Button icon={<UploadOutlined />}>Upload Logo</Button>
         </Upload>
       </Form.Item>
