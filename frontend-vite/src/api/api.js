@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance with proxy-aware base URL
 const API = axios.create({
   baseURL: process.env.NODE_ENV === "development"
-    ? "http://localhost:5000/api"  // Set this to the local backend URL during development
+    ? "http://localhost:5000"  // Set this to the local backend URL during development
     : "https://gym-pro5.vercel.app", // Set this to the production backend URL
   withCredentials: true,
 });
@@ -42,7 +42,7 @@ API.interceptors.response.use(
 // WebSocket helper
 export const createWebSocket = (path) => {
   const base = process.env.NODE_ENV === "development" 
-    ? window.location.origin.replace(/^http/, 'ws') + '/api'
+    ? window.location.origin.replace(/^http/, 'ws')
     : 'wss://gym-pro5.vercel.app';
   return new WebSocket(`${base}${path}`);
 };
@@ -67,7 +67,7 @@ export const addGymWithManager = async (gymData) => {
       hasLogo: gymData.has('logo')
     });
 
-    const response = await API.post("/web/gym", gymData, {
+    const response = await API.post("/api/web/gym", gymData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -94,7 +94,7 @@ export const addGymWithManager = async (gymData) => {
 
 export const deleteGym = async (gymId) => {
   try {
-    const response = await API.delete(`/web/gym/${gymId}`);
+    const response = await API.delete(`/api/web/gym/${gymId}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -103,7 +103,7 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/web/gym");
+    const response = await API.get("/api/web/gym");
     console.log('Fetched gyms:', response.data);
     return response.data;
   } catch (error) {
@@ -114,7 +114,7 @@ export const fetchGyms = async () => {
 
 export const updateGym = async (gymId, gymData) => {
   try {
-    const response = await API.put(`/web/gym/${gymId}`, gymData);
+    const response = await API.put(`/api/web/gym/${gymId}`, gymData);
     return response.data;
   } catch (error) {
     throw error;
@@ -123,7 +123,7 @@ export const updateGym = async (gymId, gymData) => {
 
 export const fetchGymById = async (gymId) => {
   try {
-    const response = await API.get(`/web/gym/${gymId}`);
+    const response = await API.get(`/api/web/gym/${gymId}`);
     return response.data;
   } catch (error) {
     throw error;
