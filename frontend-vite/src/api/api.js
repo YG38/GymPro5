@@ -50,14 +50,21 @@ export const createWebSocket = (path) => {
 // 🏛️ Admin Endpoints
 export const addGymWithManager = async (gymData) => {
   try {
-    // Log the data being sent
+    // Convert price to number
+    const price = parseFloat(gymData.get('price'));
+    if (isNaN(price)) {
+      throw new Error('Price must be a valid number');
+    }
+    gymData.set('price', price);
+
+    // Log the data being sent (excluding password)
     console.log('Sending gym data:', {
       gymName: gymData.get('gymName'),
       location: gymData.get('location'),
       price: gymData.get('price'),
       managerName: gymData.get('managerName'),
       managerEmail: gymData.get('managerEmail'),
-      // Don't log password for security
+      hasLogo: gymData.has('logo')
     });
 
     const response = await API.post("/web/gym", gymData, {
@@ -69,14 +76,25 @@ export const addGymWithManager = async (gymData) => {
     console.log('Server response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error in addGymWithManager:', error.response || error);
-    throw error;
+    console.error('Error in addGymWithManager:', error);
+    console.error('Error response:', error.response?.data);
+    
+    // Throw a more informative error
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else if (error.message) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('An unexpected error occurred while adding the gym');
+    }
   }
 };
 
 export const deleteGym = async (gymId) => {
   try {
-    const response = await API.delete(`/gym/${gymId}`);
+    const response = await API.delete(`/web/gym/${gymId}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -85,7 +103,7 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/gym");
+    const response = await API.get("/web/gym");
     return response.data;
   } catch (error) {
     throw error;
@@ -94,7 +112,7 @@ export const fetchGyms = async () => {
 
 export const updateGym = async (gymId, gymData) => {
   try {
-    const response = await API.put(`/gym/${gymId}`, gymData);
+    const response = await API.put(`/web/gym/${gymId}`, gymData);
     return response.data;
   } catch (error) {
     throw error;
@@ -103,7 +121,7 @@ export const updateGym = async (gymId, gymData) => {
 
 export const fetchGymById = async (gymId) => {
   try {
-    const response = await API.get(`/gym/${gymId}`);
+    const response = await API.get(`/web/gym/${gymId}`);
     return response.data;
   } catch (error) {
     throw error;
