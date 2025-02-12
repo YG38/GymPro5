@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import User from '../models/User.js';
+import Gym from '../models/Gym.js'; // Assuming Gym model is defined in this file
 
 dotenv.config();  // Load environment variables
 
@@ -64,6 +65,74 @@ router.post('/web/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Manager login route
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+    console.log('Login attempt:', { email, role });
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if the role matches
+    if (user.role !== role) {
+      return res.status(401).json({ error: 'Invalid role for this user' });
+    }
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // If it's a manager, get their gym information
+    let gymInfo = null;
+    if (role === 'manager') {
+      const gym = await Gym.findOne({ 'manager.userId': user._id });
+      if (gym) {
+        gymInfo = {
+          id: gym._id,
+          name: gym.gymName,
+          location: gym.location,
+          price: gym.price,
+          logo: gym.logo
+        };
+      }
+    }
+
+    // Generate token
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        gymId: gymInfo?.id
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      gym: gymInfo
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Error during login' });
   }
 });
 

@@ -29,6 +29,11 @@ const GymSchema = new mongoose.Schema({
     }
   },
   manager: {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     name: {
       type: String,
       required: [true, 'Manager name is required'],
@@ -48,11 +53,6 @@ const GymSchema = new mongoose.Schema({
         },
         message: props => `${props.value} is not a valid email address!`
       }
-    },
-    password: {
-      type: String,
-      required: [true, 'Manager password is required'],
-      minlength: [6, 'Password must be at least 6 characters long']
     }
   },
   logo: {
@@ -63,7 +63,6 @@ const GymSchema = new mongoose.Schema({
   timestamps: true,
   toJSON: {
     transform: function(doc, ret) {
-      delete ret.manager.password;
       return ret;
     }
   }

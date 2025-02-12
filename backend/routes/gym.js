@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import bcrypt from "bcrypt";
 import Gym from "../models/Gym.js"; 
+import User from "../models/User.js"; // Import User model
 import fs from 'fs';
 import path from 'path';
 
@@ -85,48 +86,38 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       });
     }
 
-    // Ensure price is a valid number
-    const numericPrice = parseFloat(price);
-    if (isNaN(numericPrice)) {
-      console.error('Invalid price value:', price);
-      return res.status(400).json({ error: "Price must be a valid number" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(managerEmail)) {
-      console.error('Invalid email format:', managerEmail);
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    // Check if a gym with this name already exists
-    const existingGym = await Gym.findOne({ gymName: gymName });
-    if (existingGym) {
-      console.error('Duplicate gym name:', gymName);
-      return res.status(400).json({ error: "A gym with this name already exists" });
-    }
-
     // Check if a manager with this email already exists
-    const existingManager = await Gym.findOne({ "manager.email": managerEmail.toLowerCase() });
+    const existingManager = await User.findOne({ email: managerEmail.toLowerCase() });
     if (existingManager) {
       console.error('Duplicate manager email:', managerEmail);
       return res.status(400).json({ error: "A manager with this email already exists" });
     }
 
     try {
-      // Hash the password
+      // Hash the manager's password
       const hashedPassword = await bcrypt.hash(managerPassword, 10);
       console.log('Password hashed successfully');
 
-      // Create new gym with proper manager structure
+      // Create manager user account
+      const managerUser = new User({
+        name: managerName,
+        email: managerEmail.toLowerCase(),
+        password: hashedPassword,
+        role: 'manager'
+      });
+
+      await managerUser.save();
+      console.log('Manager user account created successfully');
+
+      // Create new Gym
       const newGym = new Gym({
-        gymName,
-        location,
-        price: numericPrice,
+        gymName: gymName.trim(),
+        location: location.trim(),
+        price: parseFloat(price),
         manager: {
-          name: managerName,
-          email: managerEmail,
-          password: hashedPassword
+          userId: managerUser._id,
+          name: managerName.trim(),
+          email: managerEmail.trim().toLowerCase()
         },
         logo: req.file ? req.file.path : undefined
       });
@@ -140,44 +131,39 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
         logo: newGym.logo
       });
 
-      // Save the gym
-      const savedGym = await newGym.save();
+      await newGym.save();
       console.log('Gym saved successfully');
       
       res.status(201).json({ 
-        message: "Gym registered successfully!", 
+        message: "Gym created successfully",
         gym: {
-          ...savedGym.toObject(),
+          ...newGym.toObject(),
           manager: {
-            ...savedGym.manager.toObject(),
-            password: undefined
+            name: newGym.manager.name,
+            email: newGym.manager.email
           }
         }
       });
     } catch (innerError) {
       console.error('Error during gym creation:', innerError);
-      throw innerError; // Re-throw to be caught by outer catch
+      // If there's an error, clean up the uploaded file
+      if (req.file) {
+        try {
+          fs.unlinkSync(req.file.path);
+          console.log('Cleaned up uploaded file after error');
+        } catch (unlinkError) {
+          console.error('Error cleaning up file:', unlinkError);
+        }
+      }
+      throw innerError;
     }
   } catch (error) {
     console.error('Error creating gym:', error);
     console.error('Error stack:', error.stack);
-    
-    // If there was an error and a file was uploaded, delete it
-    if (req.file) {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log('Cleaned up uploaded file after error');
-      } catch (unlinkError) {
-        console.error('Error cleaning up file:', unlinkError);
-      }
-    }
-    
-    // Send a more detailed error response
     res.status(500).json({ 
-      error: "Error creating gym",
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? {
-        stack: error.stack,
+      error: "Error creating gym", 
+      details: error.message,
+      errorInfo: error.code ? {
         name: error.name,
         code: error.code
       } : undefined
@@ -241,6 +227,108 @@ router.delete("/gym/:id", async (req, res) => {
   } catch (error) {
     console.error('Error deleting gym:', error);
     res.status(500).json({ error: "Error deleting gym" });
+  }
+});
+
+// Manager: Update gym price
+router.put("/manager/price/:gymId", async (req, res) => {
+  try {
+    const { gymId } = req.params;
+    const { price } = req.body;
+    const userId = req.user.userId; // From JWT token
+
+    // Validate price
+    if (!price || isNaN(price) || price < 0) {
+      return res.status(400).json({ error: "Invalid price value" });
+    }
+
+    // Find gym and verify manager
+    const gym = await Gym.findOne({ _id: gymId, 'manager.userId': userId });
+    if (!gym) {
+      return res.status(404).json({ error: "Gym not found or unauthorized" });
+    }
+
+    // Update price
+    gym.price = price;
+    await gym.save();
+
+    res.json({ message: "Price updated successfully", gym });
+  } catch (error) {
+    console.error('Error updating gym price:', error);
+    res.status(500).json({ error: "Error updating gym price" });
+  }
+});
+
+// Manager: Update gym location
+router.put("/manager/location/:gymId", async (req, res) => {
+  try {
+    const { gymId } = req.params;
+    const { location } = req.body;
+    const userId = req.user.userId; // From JWT token
+
+    if (!location || location.trim().length < 5) {
+      return res.status(400).json({ error: "Invalid location. Must be at least 5 characters long." });
+    }
+
+    // Find gym and verify manager
+    const gym = await Gym.findOne({ _id: gymId, 'manager.userId': userId });
+    if (!gym) {
+      return res.status(404).json({ error: "Gym not found or unauthorized" });
+    }
+
+    // Update location
+    gym.location = location.trim();
+    await gym.save();
+
+    res.json({ message: "Location updated successfully", gym });
+  } catch (error) {
+    console.error('Error updating gym location:', error);
+    res.status(500).json({ error: "Error updating gym location" });
+  }
+});
+
+// Manager: Update gym logo
+router.put("/manager/logo/:gymId", upload.single("logo"), handleMulterError, async (req, res) => {
+  try {
+    const { gymId } = req.params;
+    const userId = req.user.userId; // From JWT token
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No logo file provided" });
+    }
+
+    // Find gym and verify manager
+    const gym = await Gym.findOne({ _id: gymId, 'manager.userId': userId });
+    if (!gym) {
+      return res.status(404).json({ error: "Gym not found or unauthorized" });
+    }
+
+    // Delete old logo if it exists
+    if (gym.logo) {
+      try {
+        fs.unlinkSync(gym.logo);
+      } catch (error) {
+        console.error('Error deleting old logo:', error);
+      }
+    }
+
+    // Update logo
+    gym.logo = req.file.path;
+    await gym.save();
+
+    res.json({ message: "Logo updated successfully", gym });
+  } catch (error) {
+    // Clean up uploaded file if there's an error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error cleaning up file:', unlinkError);
+      }
+    }
+
+    console.error('Error updating gym logo:', error);
+    res.status(500).json({ error: "Error updating gym logo" });
   }
 });
 
