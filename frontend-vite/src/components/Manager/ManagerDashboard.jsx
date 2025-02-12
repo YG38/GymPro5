@@ -5,7 +5,7 @@ import AddTrainerForm from './AddTrainerForm';
 import LocationUpdate from './LocationUpdate';
 import PriceManagement from './PriceManagement';
 import TraineeList from './TraineeList';
-import { fetchTrainees, deleteTrainee } from "../../api/api";
+import { fetchTrainees, deleteTrainee, fetchTrainers, deleteTrainer, addTrainer } from "../../api/api";
 
 const { TabPane } = Tabs;
 const { Content } = Layout;
@@ -15,36 +15,24 @@ const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [gym, setGym] = useState(null);
   const [trainees, setTrainees] = useState([]);
+  const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const initializeDashboard = async () => {
       try {
-        // Get gym data from session storage
         const gymData = sessionStorage.getItem('gymData');
-        console.log('Retrieved gym data from session:', gymData);
-
         if (!gymData) {
-          console.error('No gym data found in session storage');
           message.error('No gym data found');
           navigate('/login');
           return;
         }
 
         const parsedGym = JSON.parse(gymData);
-        console.log('Parsed gym data:', parsedGym);
-        
-        if (!parsedGym || !parsedGym.id) {
-          console.error('Invalid gym data:', parsedGym);
-          message.error('Invalid gym data');
-          navigate('/login');
-          return;
-        }
-
         setGym(parsedGym);
         await loadTrainees(parsedGym.id);
+        await loadTrainers(parsedGym.id);
       } catch (error) {
-        console.error('Error initializing dashboard:', error);
         message.error('Error loading dashboard data');
       } finally {
         setLoading(false);
@@ -59,24 +47,37 @@ const ManagerDashboard = () => {
       const response = await fetchTrainees(gymId);
       setTrainees(response.data);
     } catch (error) {
-      console.error("Failed to fetch trainees:", error);
       message.error("Failed to load trainees");
     }
   };
 
-  const handleDeleteTrainee = async (traineeId) => {
+  const loadTrainers = async (gymId) => {
     try {
-      await deleteTrainee(traineeId);
-      setTrainees(trainees.filter((trainee) => trainee._id !== traineeId));
-      message.success("Trainee deleted successfully");
+      const response = await fetchTrainers(gymId);
+      setTrainers(response.data);
     } catch (error) {
-      console.error("Failed to delete trainee:", error);
-      message.error("Failed to delete trainee");
+      message.error("Failed to load trainers");
     }
   };
 
-  const handleAddTrainer = (trainer) => {
-    message.success("Trainer added successfully");
+  const handleDeleteTrainer = async (trainerId) => {
+    try {
+      await deleteTrainer(trainerId);
+      setTrainers(trainers.filter((trainer) => trainer._id !== trainerId));
+      message.success("Trainer deleted successfully");
+    } catch (error) {
+      message.error("Failed to delete trainer");
+    }
+  };
+
+  const handleAddTrainer = async (trainerData) => {
+    try {
+      const response = await addTrainer(gym.id, trainerData);
+      setTrainers([...trainers, response.data]);
+      message.success("Trainer added successfully");
+    } catch (error) {
+      message.error("Failed to add trainer");
+    }
   };
 
   if (loading) {
@@ -133,6 +134,20 @@ const ManagerDashboard = () => {
           <TabPane tab="Manage Trainees" key="4">
             <Card>
               <TraineeList trainees={trainees} onDeleteTrainee={handleDeleteTrainee} />
+            </Card>
+          </TabPane>
+
+          <TabPane tab="Manage Trainers" key="5">
+            <Card>
+              <h3>Trainers List</h3>
+              <ul>
+                {trainers.map((trainer) => (
+                  <li key={trainer._id}>
+                    {trainer.name} - {trainer.email}
+                    <button onClick={() => handleDeleteTrainer(trainer._id)}>Delete</button>
+                  </li>
+                ))}
+              </ul>
             </Card>
           </TabPane>
         </Tabs>

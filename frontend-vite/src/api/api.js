@@ -131,9 +131,11 @@ export const fetchGymById = async (gymId) => {
 };
 
 // 👨‍💼 Manager Endpoints
-export const addTrainer = async (trainerData) => {
+export const addTrainer = async (gymId, trainerData) => {
   try {
-    const response = await API.post("/manager/trainers", trainerData);
+    const response = await API.post(`/manager/${gymId}/trainers`, {
+      ...trainerData
+    });
     return response.data;
   } catch (error) {
     throw error;

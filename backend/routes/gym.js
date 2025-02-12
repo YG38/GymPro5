@@ -171,6 +171,26 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
   }
 });
 
+// POST: Create Trainer
+router.post('/trainer', async (req, res) => {
+  const { gymId, name, email, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newTrainer = new WebUser({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'trainer',
+      gymId
+    });
+    await newTrainer.save();
+    res.status(201).json({ message: 'Trainer added successfully!' });
+  } catch (error) {
+    console.error('Error adding trainer:', error);
+    res.status(500).json({ error: 'Failed to add trainer' });
+  }
+});
+
 // Get all gyms
 router.get("/gym", async (req, res) => {
   try {
@@ -202,31 +222,21 @@ router.get("/gym/:id", async (req, res) => {
   }
 });
 
-// Delete gym
+// DELETE: Delete Gym and associated trainers
 router.delete("/gym/:id", async (req, res) => {
   try {
     const { id } = req.params;
     console.log('Deleting gym with ID:', id);
-    
-    const gym = await Gym.findByIdAndDelete(id);
-    if (!gym) {
-      return res.status(404).json({ error: "Gym not found" });
-    }
-    
-    // Delete logo file if it exists
-    if (gym.logo) {
-      try {
-        fs.unlinkSync(gym.logo);
-        console.log('Deleted gym logo file');
-      } catch (error) {
-        console.error('Error deleting logo file:', error);
-      }
-    }
-    
-    res.json({ message: "Gym deleted successfully" });
+
+    // Remove associated trainers
+    await WebUser.deleteMany({ gymId: id, role: 'trainer' });
+
+    // Delete the gym
+    await Gym.findByIdAndDelete(id);
+    res.status(200).json({ message: 'Gym and associated trainers deleted successfully!' });
   } catch (error) {
     console.error('Error deleting gym:', error);
-    res.status(500).json({ error: "Error deleting gym" });
+    res.status(500).json({ error: 'Failed to delete gym' });
   }
 });
 
