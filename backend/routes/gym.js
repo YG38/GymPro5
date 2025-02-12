@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import bcrypt from "bcrypt";
 import Gym from "../models/Gym.js"; 
-import User from "../models/User.js"; // Import User model
+import WebUser from "../models/WebUser.js"; // Import WebUser instead of User
 import fs from 'fs';
 import path from 'path';
 
@@ -87,7 +87,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     }
 
     // Check if a manager with this email already exists
-    const existingManager = await User.findOne({ email: managerEmail.toLowerCase() });
+    const existingManager = await WebUser.findOne({ email: managerEmail.toLowerCase() });
     if (existingManager) {
       console.error('Duplicate manager email:', managerEmail);
       return res.status(400).json({ error: "A manager with this email already exists" });
@@ -99,7 +99,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       console.log('Password hashed successfully');
 
       // Create manager user account
-      const managerUser = new User({
+      const managerUser = new WebUser({
         name: managerName,
         email: managerEmail.toLowerCase(),
         password: hashedPassword,
@@ -218,8 +218,8 @@ router.delete("/gym/:id", async (req, res) => {
       try {
         fs.unlinkSync(gym.logo);
         console.log('Deleted gym logo file');
-      } catch (unlinkError) {
-        console.error('Error deleting logo file:', unlinkError);
+      } catch (error) {
+        console.error('Error deleting logo file:', error);
       }
     }
     

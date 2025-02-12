@@ -2,8 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import User from '../models/User.js';
-import Gym from '../models/Gym.js'; // Assuming Gym model is defined in this file
+import WebUser from '../models/WebUser.js';
+import Gym from '../models/Gym.js'; 
 
 dotenv.config();  // Load environment variables
 
@@ -43,7 +43,7 @@ router.post('/web/login', async (req, res) => {
     }
 
     // Handle user login (non-admin)
-    const user = await User.findOne({ email, role });
+    const user = await WebUser.findOne({ email, role });
     if (!user) {
       return res.status(400).json({ message: 'User not found or incorrect role' });
     }
@@ -75,7 +75,7 @@ router.post('/login', async (req, res) => {
     console.log('Login attempt:', { email, role });
 
     // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await WebUser.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
