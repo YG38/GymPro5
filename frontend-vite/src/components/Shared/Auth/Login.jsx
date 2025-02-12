@@ -45,30 +45,34 @@ const Login = () => {
         role,
       });
 
-      const { token, role: userRole, gym } = response.data;
-      const userData = { token, role: userRole, email, gym };
+      const { token, user, gym } = response.data;
+      const userData = { 
+        token, 
+        role: user.role,
+        email: user.email,
+        gym 
+      };
 
       // Store in session storage
       sessionStorage.setItem('authToken', token);
-      sessionStorage.setItem('role', userRole);
-      sessionStorage.setItem('email', email);
-      sessionStorage.setItem('gym', gym);
+      sessionStorage.setItem('role', user.role);
+      sessionStorage.setItem('email', user.email);
+      if (gym) {
+        sessionStorage.setItem('gymData', JSON.stringify(gym));
+      }
 
       // Update auth context
       login(userData);
 
-      console.log(`${userRole} login successful`);
+      console.log(`${user.role} login successful`);
 
       // Navigate based on role
-      switch (userRole) {
+      switch (user.role) {
         case 'admin':
           navigate('/admin/dashboard');
           break;
         case 'manager':
           navigate('/manager/dashboard');
-          break;
-        case 'trainer':
-          navigate('/trainer/dashboard');
           break;
         default:
           setErrorMessage('Invalid user role');
