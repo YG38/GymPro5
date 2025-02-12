@@ -39,19 +39,20 @@ const Login = () => {
       }
 
       // Normal login for non-admin users through API
-      const response = await axios.post('http://localhost:5000/web/login', {
+      const response = await axios.post('http://localhost:5000/api/auth-web/login', {
         email,
         password,
         role,
       });
 
-      const { token, role: userRole } = response.data;
-      const userData = { token, role: userRole, email };
+      const { token, role: userRole, gym } = response.data;
+      const userData = { token, role: userRole, email, gym };
 
       // Store in session storage
       sessionStorage.setItem('authToken', token);
       sessionStorage.setItem('role', userRole);
       sessionStorage.setItem('email', email);
+      sessionStorage.setItem('gym', gym);
 
       // Update auth context
       login(userData);

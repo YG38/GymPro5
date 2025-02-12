@@ -66,8 +66,15 @@ app.use('/api/auth-web', authWebRoutes); // Web app authentication
 //  Gym Routes (For AddGymForm)
 app.use('/api/web', gymRoutes);
 
+// Debug route logging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 // 404 Handler
 app.use((req, res) => {
+  console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ 
     success: false, 
     message: `Route ${req.originalUrl} not found` 
