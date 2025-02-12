@@ -1,49 +1,21 @@
 import React, { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import { PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { PlusOutlined, UnorderedListOutlined, LogoutOutlined } from '@ant-design/icons';
 import AddGymForm from './AddGymForm';
 import GymList from './GymList';
-import { fetchGyms, deleteGym } from "../../api/api";
-import { useNavigate } from "react-router-dom";
-import "../../AdminDashboard.css";
+import { useAuth } from '../../context/AuthContext';
 
 const { Content, Sider } = Layout;
 
 const AdminDashboard = () => {
-  const [gyms, setGyms] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [selectedKey, setSelectedKey] = useState('addGym');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadGyms = async () => {
-      try {
-        const response = await fetchGyms();
-        setGyms(Array.isArray(response?.data) ? response.data : []);
-      } catch (err) {
-        setError("Failed to fetch gyms");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadGyms();
-  }, []);
-
-  const handleDeleteGym = async (gymId) => {
-    try {
-      await deleteGym(gymId);
-      setGyms(prev => prev.filter(gym => gym._id !== gymId));
-    } catch (error) {
-      setError("Failed to delete gym");
-      console.error("Error deleting gym", error);
-    }
-  };
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    sessionStorage.clear();
-    navigate("/login", { replace: true });
+    logout();
+    navigate('/login');
   };
 
   const menuItems = [
@@ -57,6 +29,12 @@ const AdminDashboard = () => {
       icon: <UnorderedListOutlined />,
       label: 'Manage Gyms',
     },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      onClick: handleLogout,
+    },
   ];
 
   const renderContent = () => {
@@ -64,19 +42,7 @@ const AdminDashboard = () => {
       case 'addGym':
         return <AddGymForm onAddGym={() => setSelectedKey('manageGyms')} />;
       case 'manageGyms':
-        if (loading) {
-          return <div className="loading">Loading gyms...</div>;
-        }
-        return (
-          <div>
-            {error && <p className="error-message">{error}</p>}
-            {!gyms?.length ? (
-              <p>No gyms found.</p>
-            ) : (
-              <GymList gyms={gyms} onDeleteGym={handleDeleteGym} />
-            )}
-          </div>
-        );
+        return <GymList />;
       default:
         return <AddGymForm />;
     }
@@ -85,16 +51,20 @@ const AdminDashboard = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider width={200} theme="light">
+        <div style={{ padding: '16px', fontWeight: 'bold', borderBottom: '1px solid #f0f0f0' }}>
+          Admin Dashboard
+        </div>
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          onClick={({ key }) => setSelectedKey(key)}
+          onClick={({ key }) => {
+            if (key !== 'logout') {
+              setSelectedKey(key);
+            }
+          }}
           style={{ height: '100%', borderRight: 0 }}
         />
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
       </Sider>
       <Layout style={{ padding: '24px' }}>
         <Content
@@ -103,6 +73,7 @@ const AdminDashboard = () => {
             margin: 0,
             background: '#fff',
             borderRadius: '4px',
+            minHeight: 280,
           }}
         >
           {renderContent()}

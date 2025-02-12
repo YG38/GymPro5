@@ -14,18 +14,27 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
 
     try {
       // Check if it's Admin login first with hardcoded credentials
       if (email === 'ymebratu64@gmail.com' && password === 'YoniReact1@mom' && role === 'admin') {
-        sessionStorage.setItem('authToken', 'admin-token');
-        sessionStorage.setItem('role', 'admin');
-        sessionStorage.setItem('email', 'ymebratu64@gmail.com');
+        const userData = {
+          token: 'admin-token',
+          role: 'admin',
+          email: 'ymebratu64@gmail.com'
+        };
 
-        login({ token: 'admin-token', role: 'admin' });
+        // Store in session storage
+        sessionStorage.setItem('authToken', userData.token);
+        sessionStorage.setItem('role', userData.role);
+        sessionStorage.setItem('email', userData.email);
+
+        // Update auth context
+        login(userData);
 
         console.log('Admin login successful');
-        navigate('/components/Admin/AdminDashboard'); // Redirect to Admin Dashboard
+        navigate('/admin/dashboard');
         return;
       }
 
@@ -37,66 +46,79 @@ const Login = () => {
       });
 
       const { token, role: userRole } = response.data;
+      const userData = { token, role: userRole, email };
 
+      // Store in session storage
       sessionStorage.setItem('authToken', token);
       sessionStorage.setItem('role', userRole);
+      sessionStorage.setItem('email', email);
 
-      login({ token, role: userRole });
+      // Update auth context
+      login(userData);
 
       console.log(`${userRole} login successful`);
-      console.log('User Role:', userRole);
 
-      // Conditional navigation based on the user's role
-      if (userRole === 'admin') {
-        navigate('/components/Admin/AdminDashboard'); // Redirect to Admin Dashboard
-      } else if (userRole === 'manager') {
-        navigate('/components/Manager/ManagerDashboard'); // Redirect to Manager Dashboard
-      } else if (userRole === 'trainer') {
-        navigate('/components/Trainer/TrainerDashboard'); // Redirect to Trainer Dashboard
+      // Navigate based on role
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        case 'trainer':
+          navigate('/trainer/dashboard');
+          break;
+        default:
+          setErrorMessage('Invalid user role');
       }
     } catch (error) {
-      setErrorMessage(error.response ? error.response.data.message : 'Server error');
+      console.error('Login error:', error);
+      setErrorMessage(error.response?.data?.message || 'Login failed. Please try again.');
     }
   };
 
   return (
     <div className="login-container">
-      <h2>Login</h2>
-
-      {!sessionStorage.getItem('authToken') ? (
-        <form className="login-form" onSubmit={handleLogin}>
+      <form onSubmit={handleLogin} className="login-form">
+        <h2>Login</h2>
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
+        
+        <div className="form-group">
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="login-input"
           />
+        </div>
+        
+        <div className="form-group">
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="login-input"
           />
+        </div>
+        
+        <div className="form-group">
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             required
-            className="login-select"
           >
             <option value="">Select Role</option>
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="trainer">Trainer</option>
           </select>
-          <button type="submit" className="login-button">Login</button>
-        </form>
-      ) : null}
-
-      {errorMessage && <p className="error-message">{errorMessage}</p>}
+        </div>
+        
+        <button type="submit">Login</button>
+      </form>
     </div>
   );
 };

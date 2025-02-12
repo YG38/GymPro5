@@ -2,14 +2,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
-import 'antd/dist/reset.css'; // Import Ant Design CSS
+import { ConfigProvider } from 'antd';
 import './global.css'; 
 import App from './App';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ConfigProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ConfigProvider>
   </React.StrictMode>
 );

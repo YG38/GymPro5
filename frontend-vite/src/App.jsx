@@ -3,48 +3,77 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
 
 import HomePage from './pages/HomePage';
-import AdminDashboard from './components/Admin/AdminDashboard';  // Adjust according to your component names
+import AdminDashboard from './components/Admin/AdminDashboard';
 import ManagerDashboard from './components/Manager/ManagerDashboard';
 import TrainerDashboard from './components/Trainer/TrainerDashboard';
 import Login from './components/Shared/Auth/Login';
 import ProtectedRoute from './components/Shared/ProtectedRoute';
 
 function App() {
-  const { user } = useAuth();  // Check if the user is authenticated
+  const { user } = useAuth();
+
+  // Helper function to redirect based on user role
+  const getRedirectPath = (user) => {
+    if (!user) return '/login';
+    switch (user.role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'manager':
+        return '/manager/dashboard';
+      case 'trainer':
+        return '/trainer/dashboard';
+      default:
+        return '/login';
+    }
+  };
 
   return (
     <Router>
       <Routes>
-        {/* Default route: Redirect to login if no user */}
+        {/* Default route: Redirect based on user role */}
         <Route 
           path="/" 
-          element={user ? <HomePage /> : <Navigate to="/login" />} 
+          element={<Navigate to={getRedirectPath(user)} replace />} 
         />
         
-        {/* Login route: If user is logged in, redirect to their dashboard */}
+        {/* Login route */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to={`/${user.role}/AdminDashboard`} /> : <Login />} 
+          element={user ? <Navigate to={getRedirectPath(user)} replace /> : <Login />} 
         />
 
         {/* Protected routes for specific roles */}
         <Route 
-          path="/admin/AdminDashboard" 
-          element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} 
-        />
-        <Route 
-          path="/manager/ManagerDashboard/:gymId" 
-          element={<ProtectedRoute allowedRoles={['manager']}><ManagerDashboard /></ProtectedRoute>} 
-        />
-        <Route 
-          path="/trainer/TrainerDashboard/:trainerId" 
-          element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} 
+          path="/admin/dashboard/*" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
         />
 
-        {/* Catch-all route for unknown paths */}
+        <Route 
+          path="/manager/dashboard/:gymId" 
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/trainer/dashboard/:trainerId" 
+          element={
+            <ProtectedRoute allowedRoles={['trainer']}>
+              <TrainerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Catch-all route */}
         <Route 
           path="*" 
-          element={<Navigate to="/login" />} 
+          element={<Navigate to={getRedirectPath(user)} replace />} 
         />
       </Routes>
     </Router>
