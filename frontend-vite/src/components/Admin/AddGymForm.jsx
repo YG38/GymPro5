@@ -17,10 +17,16 @@ const AddGymForm = ({ onAddGym }) => {
         throw new Error('Please fill in all required fields');
       }
 
-      // Validate price is a number
+      // Validate price is a number and within range
       const price = Number(values.price);
-      if (isNaN(price) || price <= 0) {
-        throw new Error('Price must be a valid positive number');
+      if (isNaN(price)) {
+        throw new Error('Price must be a valid number');
+      }
+      if (price <= 0) {
+        throw new Error('Price must be greater than 0');
+      }
+      if (price > 10000) {
+        throw new Error('Price cannot exceed 10,000');
       }
 
       const formData = new FormData();
@@ -125,14 +131,17 @@ const AddGymForm = ({ onAddGym }) => {
         rules={[
           { required: true, message: 'Please input the gym price!' },
           { type: 'number', message: 'Please enter a valid number!' },
-          { min: 0, message: 'Price cannot be negative!' }
+          { min: 1, message: 'Price must be greater than 0!' },
+          { max: 10000, message: 'Price cannot exceed 10,000!' }
         ]}
+        extra="Price must be between 1 and 10,000"
       >
         <Input 
           type="number" 
-          min={0} 
+          min={1} 
+          max={10000}
           step="0.01"
-          placeholder="Enter monthly membership price" 
+          placeholder="Enter monthly membership price (1-10,000)" 
         />
       </Form.Item>
 
