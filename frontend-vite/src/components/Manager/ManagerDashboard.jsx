@@ -17,6 +17,7 @@ const ManagerDashboard = () => {
   const [trainees, setTrainees] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -33,6 +34,8 @@ const ManagerDashboard = () => {
         await loadTrainees(parsedGym.id);
         await loadTrainers(parsedGym.id);
       } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        setError(error);
         message.error('Error loading dashboard data');
       } finally {
         setLoading(false);
@@ -47,6 +50,7 @@ const ManagerDashboard = () => {
       const response = await fetchTrainees(gymId);
       setTrainees(response.data);
     } catch (error) {
+      setError(error);
       message.error("Failed to load trainees");
     }
   };
@@ -56,7 +60,19 @@ const ManagerDashboard = () => {
       const response = await fetchTrainers(gymId);
       setTrainers(response.data);
     } catch (error) {
+      setError(error);
       message.error("Failed to load trainers");
+    }
+  };
+
+  const handleDeleteTrainee = async (traineeId) => {
+    try {
+      await deleteTrainee(traineeId);
+      setTrainees(trainees.filter((trainee) => trainee._id !== traineeId));
+      message.success("Trainee deleted successfully");
+    } catch (error) {
+      setError(error);
+      message.error("Failed to delete trainee");
     }
   };
 
@@ -66,6 +82,7 @@ const ManagerDashboard = () => {
       setTrainers(trainers.filter((trainer) => trainer._id !== trainerId));
       message.success("Trainer deleted successfully");
     } catch (error) {
+      setError(error);
       message.error("Failed to delete trainer");
     }
   };
@@ -76,6 +93,7 @@ const ManagerDashboard = () => {
       setTrainers([...trainers, response.data]);
       message.success("Trainer added successfully");
     } catch (error) {
+      setError(error);
       message.error("Failed to add trainer");
     }
   };
@@ -87,6 +105,16 @@ const ManagerDashboard = () => {
           <Card loading={true}>
             <div style={{ height: '400px' }}></div>
           </Card>
+        </Content>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout style={{ minHeight: '100vh', padding: '24px' }}>
+        <Content style={{ background: '#fff', padding: '24px' }}>
+          <Title level={4}>An error occurred: {error.message}</Title>
         </Content>
       </Layout>
     );
@@ -106,7 +134,6 @@ const ManagerDashboard = () => {
     <Layout style={{ minHeight: '100vh', padding: '24px' }}>
       <Content style={{ background: '#fff', padding: '24px' }}>
         <Title level={2}>{gym.name} Dashboard</Title>
-        
         <Card style={{ marginBottom: '24px' }}>
           <p><strong>Location:</strong> {gym.location}</p>
           <p><strong>Current Price:</strong> ${gym.price}</p>

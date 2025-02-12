@@ -133,10 +133,11 @@ export const fetchGymById = async (gymId) => {
 // 👨‍💼 Manager Endpoints
 export const addTrainer = async (gymId, trainerData) => {
   try {
-    const response = await API.post(`/manager/${gymId}/trainers`, {
+    const response = await API.post(`/trainer`, {
+      gymId,
       ...trainerData
     });
-    return response.data;
+    return response;
   } catch (error) {
     throw error;
   }
@@ -201,7 +202,7 @@ export const fetchTrainees = async () => {
 
 export const fetchTrainers = async (gymId) => {
   try {
-    const response = await API.get(`/gym/${gymId}/trainers`);
+    const response = await API.get(`/trainer/${gymId}/trainers`);
     return response.data;
   } catch (error) {
     throw error;
@@ -220,7 +221,7 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
-    const response = await API.delete(`/trainers/${trainerId}`);
+    const response = await API.delete(`/trainer/${trainerId}`);
     return response.data;
   } catch (error) {
     throw error;
