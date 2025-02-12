@@ -50,9 +50,26 @@ export const createWebSocket = (path) => {
 // 🏛️ Admin Endpoints
 export const addGymWithManager = async (gymData) => {
   try {
-    const response = await API.post("/gym", gymData);
+    // Log the data being sent
+    console.log('Sending gym data:', {
+      gymName: gymData.get('gymName'),
+      location: gymData.get('location'),
+      price: gymData.get('price'),
+      managerName: gymData.get('managerName'),
+      managerEmail: gymData.get('managerEmail'),
+      // Don't log password for security
+    });
+
+    const response = await API.post("/web/gym", gymData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    console.log('Server response:', response.data);
     return response.data;
   } catch (error) {
+    console.error('Error in addGymWithManager:', error.response || error);
     throw error;
   }
 };
