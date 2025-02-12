@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
+import 'antd/dist/reset.css'; // Import Ant Design CSS
 import './global.css'; 
 import App from './App';
 
