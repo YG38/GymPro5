@@ -104,8 +104,10 @@ export const deleteGym = async (gymId) => {
 export const fetchGyms = async () => {
   try {
     const response = await API.get("/web/gym");
+    console.log('Fetched gyms:', response.data);
     return response.data;
   } catch (error) {
+    console.error('Error fetching gyms:', error);
     throw error;
   }
 };

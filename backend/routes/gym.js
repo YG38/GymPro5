@@ -186,9 +186,11 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
 });
 
 // Get all gyms
-router.get("/gyms", async (req, res) => {
+router.get("/gym", async (req, res) => {
   try {
-    const gyms = await Gym.find({});
+    console.log('Fetching all gyms...');
+    const gyms = await Gym.find({}).select('-manager.password');
+    console.log(`Found ${gyms.length} gyms`);
     res.json(gyms);
   } catch (error) {
     console.error('Error fetching gyms:', error);
