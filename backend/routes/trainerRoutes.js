@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import WorkoutPlan from '../models/WorkoutPlans';
 import WebUser from '../models/WebUser.js';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 
@@ -10,6 +11,26 @@ router.post('/upload-workout', async (req, res) => {
     const newWorkoutPlan = new WorkoutPlan({ gymId, planDetails });
     await newWorkoutPlan.save();
     res.status(201).json({ message: 'Workout plan uploaded successfully!' });
+});
+
+// Add Trainer route
+router.post('/', async (req, res) => {
+    const { gymId, name, email, password } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newTrainer = new WebUser({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'trainer',
+            gymId
+        });
+        await newTrainer.save();
+        res.status(201).json({ message: 'Trainer added successfully!' });
+    } catch (error) {
+        console.error('Error adding trainer:', error);
+        res.status(500).json({ message: 'Failed to add trainer' });
+    }
 });
 
 // Fetch trainers by gym ID
