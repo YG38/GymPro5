@@ -68,7 +68,7 @@ router.post('/web/login', async (req, res) => {
   }
 });
 
-// Manager login route
+// Manager/Admin login route
 router.post('/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -95,9 +95,10 @@ router.post('/login', async (req, res) => {
     let gymInfo = null;
     if (role === 'manager') {
       const gym = await Gym.findOne({ 'manager.userId': user._id });
+      console.log('Found gym for manager:', gym);
       if (gym) {
         gymInfo = {
-          id: gym._id,
+          id: gym._id.toString(),
           name: gym.gymName,
           location: gym.location,
           price: gym.price,
@@ -119,7 +120,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    const responseData = {
       token,
       user: {
         id: user._id,
@@ -128,7 +129,10 @@ router.post('/login', async (req, res) => {
         role: user.role
       },
       gym: gymInfo
-    });
+    };
+
+    console.log('Sending login response:', responseData);
+    res.json(responseData);
 
   } catch (error) {
     console.error('Login error:', error);

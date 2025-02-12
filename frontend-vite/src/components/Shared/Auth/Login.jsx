@@ -45,7 +45,11 @@ const Login = () => {
         role,
       });
 
+      console.log('Login response:', response.data);
+
       const { token, user, gym } = response.data;
+      console.log('Extracted data:', { token, user, gym });
+
       const userData = { 
         token, 
         role: user.role,
@@ -53,18 +57,23 @@ const Login = () => {
         gym 
       };
 
+      console.log('User data to store:', userData);
+
       // Store in session storage
       sessionStorage.setItem('authToken', token);
       sessionStorage.setItem('role', user.role);
       sessionStorage.setItem('email', user.email);
       if (gym) {
+        console.log('Storing gym data:', gym);
         sessionStorage.setItem('gymData', JSON.stringify(gym));
+      } else {
+        console.warn('No gym data received for manager');
       }
 
       // Update auth context
       login(userData);
 
-      console.log(`${user.role} login successful`);
+      console.log(`${user.role} login successful, navigating to dashboard`);
 
       // Navigate based on role
       switch (user.role) {
