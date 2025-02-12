@@ -107,45 +107,51 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     }
 
     // Check if a manager with this email already exists
-    const existingManager = await Gym.findOne({ managerEmail: managerEmail.toLowerCase() });
+    const existingManager = await Gym.findOne({ "manager.email": managerEmail.toLowerCase() });
     if (existingManager) {
       console.error('Duplicate manager email:', managerEmail);
       return res.status(400).json({ error: "A manager with this email already exists" });
     }
 
     try {
-      // Hash the manager's password
+      // Hash the password
       const hashedPassword = await bcrypt.hash(managerPassword, 10);
       console.log('Password hashed successfully');
 
-      // Create new Gym
+      // Create new gym with proper manager structure
       const newGym = new Gym({
-        gymName: gymName.trim(),
-        location: location.trim(),
+        gymName,
+        location,
         price: numericPrice,
-        managerName: managerName.trim(),
-        managerEmail: managerEmail.trim().toLowerCase(),
-        managerPassword: hashedPassword,
-        logo: req.file ? req.file.path : "", 
+        manager: {
+          name: managerName,
+          email: managerEmail,
+          password: hashedPassword
+        },
+        logo: req.file ? req.file.path : undefined
       });
 
       console.log('Attempting to save gym:', {
         gymName: newGym.gymName,
         location: newGym.location,
         price: newGym.price,
-        managerName: newGym.managerName,
-        managerEmail: newGym.managerEmail,
+        managerName: newGym.manager.name,
+        managerEmail: newGym.manager.email,
         logo: newGym.logo
       });
 
-      await newGym.save();
+      // Save the gym
+      const savedGym = await newGym.save();
       console.log('Gym saved successfully');
       
       res.status(201).json({ 
         message: "Gym registered successfully!", 
         gym: {
-          ...newGym.toObject(),
-          managerPassword: undefined // Remove password from response
+          ...savedGym.toObject(),
+          manager: {
+            ...savedGym.manager.toObject(),
+            password: undefined
+          }
         }
       });
     } catch (innerError) {
