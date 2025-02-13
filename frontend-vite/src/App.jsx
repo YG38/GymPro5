@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
+import { useAuth } from './context/AuthContext';
 
 import HomePage from './pages/HomePage';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -12,35 +12,12 @@ import ProtectedRoute from './components/Shared/ProtectedRoute';
 function App() {
   const { user } = useAuth();
 
-  // Helper function to redirect based on user role
-  const getRedirectPath = (user) => {
-    if (!user) return '/login';
-    switch (user.role) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'manager':
-        return '/manager/dashboard';
-      case 'trainer':
-        return '/trainer/dashboard';
-      default:
-        return '/login';
-    }
-  };
-
   return (
     <Router>
       <Routes>
-        {/* Default route: Redirect based on user role */}
-        <Route 
-          path="/" 
-          element={<Navigate to={getRedirectPath(user)} replace />} 
-        />
-        
-        {/* Login route */}
-        <Route 
-          path="/login" 
-          element={user ? <Navigate to={getRedirectPath(user)} replace /> : <Login />} 
-        />
+        {/* Make login the default route */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Protected routes for specific roles */}
         <Route 
@@ -70,11 +47,8 @@ function App() {
           } 
         />
 
-        {/* Catch-all route */}
-        <Route 
-          path="*" 
-          element={<Navigate to={getRedirectPath(user)} replace />} 
-        />
+        {/* Redirect all unknown paths to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
