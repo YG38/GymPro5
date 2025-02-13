@@ -10,6 +10,7 @@ import {
 import TraineeList from "./TraineeList";
 import TrainerList from "./TrainerList";
 import GymDetails from "./GymDetails";
+import './ManagerDashboard.css';
 
 const ManagerDashboard = () => {
   const [trainees, setTrainees] = useState([]);
