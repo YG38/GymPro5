@@ -7,10 +7,10 @@ import path from 'path';
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), "uploads", "gym_logos");
+// Ensure the uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads', 'gym_logos');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Set up multer for file upload
