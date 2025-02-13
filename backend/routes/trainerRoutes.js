@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import WorkoutPlan from '../models/WorkoutPlans';
+import WorkoutPlan from '../models/WorkoutPlans.js';
 import WebUser from '../models/WebUser.js';
 import bcrypt from 'bcrypt';
 
