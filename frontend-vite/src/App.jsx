@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
+import axios from 'axios';
 
 import HomePage from './pages/HomePage';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -24,6 +25,22 @@ function App() {
         return '/trainer/dashboard';
       default:
         return '/login';
+    }
+  };
+
+  const [trainerData, setTrainerData] = useState({
+    gymId: '',
+    name: '',
+    email: '',
+    password: ''
+  });
+
+  const handleAddTrainer = async () => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/trainer', trainerData);
+      console.log('Trainer added:', response.data);
+    } catch (error) {
+      console.error('Error adding trainer:', error.response.data);
     }
   };
 
@@ -67,6 +84,19 @@ function App() {
             <ProtectedRoute allowedRoles={['trainer']}>
               <TrainerDashboard />
             </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/add-trainer" 
+          element={
+            <div>
+              <input type="text" placeholder="Gym ID" onChange={(e) => setTrainerData({ ...trainerData, gymId: e.target.value })} />
+              <input type="text" placeholder="Name" onChange={(e) => setTrainerData({ ...trainerData, name: e.target.value })} />
+              <input type="email" placeholder="Email" onChange={(e) => setTrainerData({ ...trainerData, email: e.target.value })} />
+              <input type="password" placeholder="Password" onChange={(e) => setTrainerData({ ...trainerData, password: e.target.value })} />
+              <button onClick={handleAddTrainer}>Add Trainer</button>
+            </div>
           } 
         />
 
