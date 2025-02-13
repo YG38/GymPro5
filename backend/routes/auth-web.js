@@ -42,49 +42,52 @@ router.post('/web/login', async (req, res) => {
       return res.json({ token, role: 'admin' });
     }
 
-    // Handle manager login
-    if (role === 'manager') {
-      const manager = await WebUser.findOne({ email });
-      if (!manager) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      const isMatch = await bcrypt.compare(password, manager.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      const token = jwt.sign(
-        { userId: manager._id, role: 'manager' },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      return res.json({ token, role: 'manager' });
+    // Handle user login (non-admin)
+    const user = await User.findOne({ email, role });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found or incorrect role' });
     }
 
-    // Handle trainer login
-    if (role === 'trainer') {
-      const trainer = await User.findOne({ email, role: 'trainer' });
-      if (!trainer) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      const isMatch = await bcrypt.compare(password, trainer.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      const token = jwt.sign(
-        { userId: trainer._id, role: 'trainer' },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      return res.json({ token, role: 'trainer' });
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    return res.status(400).json({ message: 'Invalid role specified' });
+    // Generate JWT token for user
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({ token, role: user.role });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Manager Login Route
+router.post('/manager/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find the user by email
+    const user = await WebUser.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare the password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Create and return a JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user._id, email: user.email } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -100,8 +103,8 @@ const authenticate = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (err) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 

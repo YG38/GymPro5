@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
 
 import HomePage from './pages/HomePage';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -30,13 +30,19 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public route - Login */}
+        {/* Default route: Redirect based on user role */}
+        <Route 
+          path="/" 
+          element={<Navigate to={getRedirectPath(user)} replace />} 
+        />
+        
+        {/* Login route */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to={getRedirectPath(user)} /> : <Login />} 
+          element={user ? <Navigate to={getRedirectPath(user)} replace /> : <Login />} 
         />
 
-        {/* Protected routes */}
+        {/* Protected routes for specific roles */}
         <Route 
           path="/admin/dashboard/*" 
           element={
@@ -64,15 +70,10 @@ function App() {
           } 
         />
 
-        {/* Default and catch-all routes */}
-        <Route 
-          path="/" 
-          element={<Navigate to={getRedirectPath(user)} />} 
-        />
-
+        {/* Catch-all route */}
         <Route 
           path="*" 
-          element={<Navigate to={getRedirectPath(user)} />} 
+          element={<Navigate to={getRedirectPath(user)} replace />} 
         />
       </Routes>
     </Router>
