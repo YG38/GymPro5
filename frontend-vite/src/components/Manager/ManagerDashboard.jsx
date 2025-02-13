@@ -1,167 +1,198 @@
-import React, { useState, useEffect } from "react";
-import { Card, Tabs, message, Layout, Typography } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu, Button, message, Spin, Card, Typography } from 'antd';
+import { LogoutOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import AddTrainerForm from './AddTrainerForm';
-import LocationUpdate from './LocationUpdate';
-import PriceManagement from './PriceManagement';
-import TraineeList from './TraineeList';
-import { fetchTrainees, deleteTrainee, fetchTrainers, deleteTrainer, addTrainer } from "../../api/api";
+import { fetchTrainees, fetchTrainers } from '../../api/api';
 
-const { TabPane } = Tabs;
-const { Content } = Layout;
-const { Title } = Typography;
+const { Header, Content } = Layout;
+const { Title, Text } = Typography;
+
+// GymPro brand colors
+const colors = {
+  primary: '#1890ff',
+  secondary: '#52c41a',
+  background: '#f0f2f5',
+  headerBg: '#001529'
+};
 
 const ManagerDashboard = () => {
-  const navigate = useNavigate();
-  const [gym, setGym] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [trainees, setTrainees] = useState([]);
   const [trainers, setTrainers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [gym, setGym] = useState(null);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
-    const initializeDashboard = async () => {
-      try {
-        const gymData = sessionStorage.getItem('gymData');
-        if (!gymData) {
-          message.error('No gym data found');
-          navigate('/login');
-          return;
-        }
-
-        const parsedGym = JSON.parse(gymData);
-        setGym(parsedGym);
-        await loadTrainees(parsedGym.id);
-        await loadTrainers(parsedGym.id);
-      } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        message.error('Error loading dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     initializeDashboard();
-  }, [navigate]);
+  }, []);
+
+  const initializeDashboard = async () => {
+    try {
+      const gymData = sessionStorage.getItem('gymData');
+      if (!gymData) {
+        setLoading(false);
+        return;
+      }
+
+      const parsedGym = JSON.parse(gymData);
+      if (!parsedGym._id) {
+        throw new Error('Invalid gym data');
+      }
+
+      setGym(parsedGym);
+      await Promise.all([
+        loadTrainees(parsedGym._id),
+        loadTrainers(parsedGym._id)
+      ]);
+    } catch (error) {
+      console.error('Error initializing dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadTrainees = async (gymId) => {
     try {
       const response = await fetchTrainees(gymId);
-      setTrainees(response.data);
+      setTrainees(response.data || []);
     } catch (error) {
-      message.error("Failed to load trainees");
+      console.error('Error loading trainees:', error);
     }
   };
 
   const loadTrainers = async (gymId) => {
     try {
       const response = await fetchTrainers(gymId);
-      setTrainers(response.data);
+      setTrainers(response.data || []);
     } catch (error) {
-      message.error("Failed to load trainers");
+      console.error('Error loading trainers:', error);
     }
   };
 
-  const handleDeleteTrainee = async (traineeId) => {
+  const handleLogout = () => {
     try {
-      await deleteTrainee(traineeId);
-      setTrainees(trainees.filter((trainee) => trainee._id !== traineeId));
-      message.success("Trainee deleted successfully");
+      logout();
     } catch (error) {
-      message.error("Failed to delete trainee");
+      console.error('Logout error:', error);
+      sessionStorage.clear();
+      navigate('/login', { replace: true });
     }
   };
 
-  const handleDeleteTrainer = async (trainerId) => {
-    try {
-      await deleteTrainer(trainerId);
-      setTrainers(trainers.filter((trainer) => trainer._id !== trainerId));
-      message.success("Trainer deleted successfully");
-    } catch (error) {
-      message.error("Failed to delete trainer");
-    }
-  };
-
-  const handleAddTrainer = async (trainerData) => {
-    try {
-      const response = await addTrainer(gym.id, trainerData);
-      setTrainers([...trainers, response.data]);
-      message.success("Trainer added successfully");
-    } catch (error) {
-      message.error("Failed to add trainer");
-    }
+  const handleAddTrainer = (newTrainer) => {
+    setTrainers(prev => [...prev, newTrainer]);
   };
 
   if (loading) {
     return (
-      <Layout style={{ minHeight: '100vh', padding: '24px' }}>
-        <Content style={{ background: '#fff', padding: '24px' }}>
-          <Card loading={true}>
-            <div style={{ height: '400px' }}></div>
-          </Card>
-        </Content>
-      </Layout>
-    );
-  }
-
-  if (!gym) {
-    return (
-      <Layout style={{ minHeight: '100vh', padding: '24px' }}>
-        <Content style={{ background: '#fff', padding: '24px' }}>
-          <Title level={4}>No gym data available. Please log in again.</Title>
-        </Content>
-      </Layout>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: colors.background 
+      }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', padding: '24px' }}>
-      <Content style={{ background: '#fff', padding: '24px' }}>
-        <Title level={2}>{gym.name} Dashboard</Title>
-        <Card style={{ marginBottom: '24px' }}>
-          <p><strong>Location:</strong> {gym.location}</p>
-          <p><strong>Current Price:</strong> ${gym.price}</p>
-        </Card>
+    <Layout style={{ minHeight: '100vh', background: colors.background }}>
+      <Header style={{ 
+        background: colors.headerBg,
+        padding: '0 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Title level={3} style={{ color: 'white', margin: 0 }}>
+            GymPro Manager Dashboard
+          </Title>
+        </div>
+        <Button 
+          type="primary" 
+          danger 
+          icon={<LogoutOutlined />}
+          onClick={handleLogout}
+          style={{ marginLeft: '16px' }}
+        >
+          Logout
+        </Button>
+      </Header>
 
-        <Tabs defaultActiveKey="1">
-          <TabPane tab="Manage Prices" key="1">
-            <Card>
-              <PriceManagement gymId={gym.id} />
+      <Content style={{ padding: '24px' }}>
+        {gym ? (
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <Card 
+              title={<Title level={4}>Welcome to {gym.name || 'GymPro'}</Title>}
+              style={{ marginBottom: '24px' }}
+            >
+              <Text>Managing your gym has never been easier with GymPro</Text>
             </Card>
-          </TabPane>
 
-          <TabPane tab="Update Location" key="2">
-            <Card>
-              <LocationUpdate gymId={gym.id} />
-            </Card>
-          </TabPane>
+            <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+              <Card title={<><TeamOutlined /> Add New Trainer</>}>
+                <AddTrainerForm 
+                  gymId={gym._id} 
+                  onAddTrainer={handleAddTrainer}
+                />
+              </Card>
 
-          <TabPane tab="Add Trainer" key="3">
-            <Card>
-              <AddTrainerForm gymId={gym.id} onAddTrainer={handleAddTrainer} />
-            </Card>
-          </TabPane>
+              <Card 
+                title={<><TeamOutlined /> Current Trainers</>}
+                extra={<Text type="secondary">{trainers.length} trainers</Text>}
+              >
+                {trainers.length > 0 ? (
+                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                    {trainers.map(trainer => (
+                      <li key={trainer._id} style={{ 
+                        padding: '8px 0',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}>
+                        <UserOutlined style={{ marginRight: '8px' }} />
+                        {trainer.name} - {trainer.email}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Text type="secondary">No trainers found</Text>
+                )}
+              </Card>
 
-          <TabPane tab="Manage Trainees" key="4">
-            <Card>
-              <TraineeList trainees={trainees} onDeleteTrainee={handleDeleteTrainee} />
-              {trainees.length === 0 && <p>No trainees yet.</p>}
-            </Card>
-          </TabPane>
-
-          <TabPane tab="Manage Trainers" key="5">
-            <Card>
-              <h3>Trainers List</h3>
-              <ul>
-                {trainers.length === 0 ? <p>No trainers yet.</p> : trainers.map((trainer) => (
-                  <li key={trainer._id}>
-                    {trainer.name} - {trainer.email}
-                    <button onClick={() => handleDeleteTrainer(trainer._id)}>Delete</button>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </TabPane>
-        </Tabs>
+              <Card 
+                title={<><TeamOutlined /> Current Trainees</>}
+                extra={<Text type="secondary">{trainees.length} trainees</Text>}
+              >
+                {trainees.length > 0 ? (
+                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                    {trainees.map(trainee => (
+                      <li key={trainee._id} style={{ 
+                        padding: '8px 0',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}>
+                        <UserOutlined style={{ marginRight: '8px' }} />
+                        {trainee.name} - {trainee.email}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Text type="secondary">No trainees found</Text>
+                )}
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <Card style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+            <Title level={2}>Welcome to GymPro</Title>
+            <Text>Please contact admin to assign you to a gym.</Text>
+          </Card>
+        )}
       </Content>
     </Layout>
   );

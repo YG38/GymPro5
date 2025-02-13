@@ -1,59 +1,72 @@
 import { Router } from 'express';
 import WorkoutPlan from '../models/WorkoutPlans.js';
 import WebUser from '../models/WebUser.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
+import { authenticate } from './auth-web.js';
 
 const router = Router();
 
-// Upload workout plan (trainer only)
-router.post('/upload-workout', async (req, res) => {
+// Upload workout plan
+router.post('/upload-workout', authenticate, async (req, res) => {
     const { gymId, planDetails } = req.body;
     const newWorkoutPlan = new WorkoutPlan({ gymId, planDetails });
     await newWorkoutPlan.save();
-    res.status(201).json({ message: 'Workout plan uploaded successfully!' });
+    res.status(201).json(newWorkoutPlan);
 });
 
 // Add Trainer route
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
     const { gymId, name, email, password } = req.body;
     try {
+        // Check if all fields are provided
+        if (!gymId || !name || !email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        // Check if trainer already exists
+        const existingTrainer = await WebUser.findOne({ email });
+        if (existingTrainer) {
+            return res.status(400).json({ message: 'Trainer already exists' });
+        }
+
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newTrainer = new WebUser({
+
+        // Create new trainer
+        const trainer = new WebUser({
             name,
             email,
             password: hashedPassword,
             role: 'trainer',
             gymId
         });
-        await newTrainer.save();
-        res.status(201).json({ message: 'Trainer added successfully!' });
+
+        await trainer.save();
+        res.status(201).json({ message: 'Trainer added successfully', trainer });
     } catch (error) {
-        console.error('Error adding trainer:', error);
-        res.status(500).json({ message: 'Failed to add trainer' });
+        res.status(500).json({ message: error.message });
     }
 });
 
 // Fetch trainers by gym ID
-router.get('/:gymId/trainers', async (req, res) => {
+router.get('/:gymId/trainers', authenticate, async (req, res) => {
     const { gymId } = req.params;
     try {
         const trainers = await WebUser.find({ gymId, role: 'trainer' });
-        res.status(200).json(trainers);
+        res.json(trainers);
     } catch (error) {
-        console.error('Failed to fetch trainers:', error);
-        res.status(500).json({ message: 'Failed to fetch trainers' });
+        res.status(500).json({ message: error.message });
     }
 });
 
 // Delete trainer by ID
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
     const { id } = req.params;
     try {
         await WebUser.findByIdAndDelete(id);
-        res.status(200).json({ message: 'Trainer deleted successfully!' });
+        res.json({ message: 'Trainer deleted successfully' });
     } catch (error) {
-        console.error('Failed to delete trainer:', error);
-        res.status(500).json({ message: 'Failed to delete trainer' });
+        res.status(500).json({ message: error.message });
     }
 });
 
