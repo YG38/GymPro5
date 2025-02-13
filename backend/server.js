@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import fs from 'fs';
+import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';  
@@ -23,6 +24,12 @@ if (!process.env.MONGODB_URI) {
   process.exit(1);
 } else {
   console.log('✅ MONGODB_URI loaded successfully');
+}
+
+// Ensure the uploads directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // CORS Configuration
