@@ -2,16 +2,25 @@ import React from "react";
 
 const TraineeList = ({ trainees, onDeleteTrainee }) => {
   return (
-    <div>
+    <div className="trainee-list">
       {trainees.length > 0 ? (
-        <ul>
-          {trainees.map((trainee) => (
-            <li key={trainee._id}>
-              {trainee.name} - {trainee.email}
-              <button onClick={() => onDeleteTrainee(trainee._id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
+        trainees.map((trainee) => (
+          <div key={trainee._id} className="trainee-item">
+            <div className="trainee-info">
+              <h4>{trainee.name}</h4>
+              <p>Email: {trainee.email}</p>
+              <p>Status: {trainee.status || 'Active'}</p>
+            </div>
+            <div className="trainee-actions">
+              <button
+                onClick={() => onDeleteTrainee(trainee._id)}
+                className="delete-button"
+              >
+                Remove Trainee
+              </button>
+            </div>
+          </div>
+        ))
       ) : (
         <p>No trainees found.</p>
       )}
