@@ -16,7 +16,7 @@ const adminCredentials = {
   role: 'admin',
 };
 
-// Login route for the web
+// Improved login route for the web
 router.post('/web/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -29,42 +29,32 @@ router.post('/web/login', async (req, res) => {
     // Handle admin login
     if (role === 'admin') {
       if (email !== adminCredentials.email || password !== adminCredentials.password) {
-        return res.status(400).json({ message: 'Invalid admin credentials' });
+        return res.status(401).json({ message: 'Invalid admin credentials' });
       }
 
       // Generate JWT token for admin
-      const token = jwt.sign(
-        { userId: 'admin', role: 'admin' },
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
-
+      const token = jwt.sign({ userId: 'admin', role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
       return res.json({ token, role: 'admin' });
     }
 
     // Handle user login (non-admin)
     const user = await WebUser.findOne({ email, role });
     if (!user) {
-      return res.status(400).json({ message: 'User not found or incorrect role' });
+      return res.status(401).json({ message: 'User not found or incorrect role' });
     }
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Generate JWT token for user
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    res.json({ token, role: user.role });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return res.json({ token, role: user.role });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 });
 
