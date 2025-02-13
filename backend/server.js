@@ -26,6 +26,10 @@ if (!process.env.MONGODB_URI) {
   console.log('✅ MONGODB_URI loaded successfully');
 }
 
+// Get the current directory from the module URL
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
+
 // Ensure the uploads directory exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
