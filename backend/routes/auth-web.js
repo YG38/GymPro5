@@ -73,10 +73,10 @@ router.post('/manager/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find the user by email
-    const user = await WebUser.findOne({ email });
+    // Find the user by email and role
+    const user = await WebUser.findOne({ email, role: 'manager' });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Invalid credentials or not a manager' });
     }
 
     // Compare the password
@@ -86,8 +86,20 @@ router.post('/manager/login', async (req, res) => {
     }
 
     // Create and return a JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, email: user.email } });
+    const token = jwt.sign(
+      { userId: user._id, role: 'manager' }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '24h' }
+    );
+    
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        email: user.email,
+        name: user.name 
+      } 
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });

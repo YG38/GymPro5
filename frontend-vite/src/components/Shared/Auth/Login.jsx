@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from '../../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../../../Login.css';
 
@@ -32,8 +32,6 @@ const Login = () => {
 
         // Update auth context
         login(userData);
-
-        console.log('Admin login successful');
         navigate('/admin/dashboard');
         return;
       }
@@ -47,17 +45,21 @@ const Login = () => {
         });
         
         const { token, user } = response.data;
-        const userData = { token, role: 'manager', email: user.email };
+        const userData = { 
+          token, 
+          role: 'manager', 
+          email: user.email,
+          name: user.name 
+        };
 
         // Store in session storage
         sessionStorage.setItem('authToken', token);
         sessionStorage.setItem('role', 'manager');
         sessionStorage.setItem('email', user.email);
+        sessionStorage.setItem('userName', user.name);
 
         // Update auth context
         login(userData);
-
-        console.log('Manager login successful');
         navigate('/manager/dashboard');
       } else {
         // Trainer login
@@ -77,13 +79,17 @@ const Login = () => {
 
         // Update auth context
         login(userData);
-
-        console.log('Trainer login successful');
         navigate('/trainer/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setErrorMessage(error.response?.data?.message || 'Login failed. Please try again.');
+      const errorMsg = error.response?.data?.message || 'Login failed. Please try again.';
+      setErrorMessage(errorMsg);
+      
+      // Clear role if it's an invalid manager login
+      if (errorMsg.includes('not a manager')) {
+        setRole('');
+      }
     }
   };
 
