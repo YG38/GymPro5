@@ -39,39 +39,24 @@ const Login = () => {
       }
 
       // Normal login for non-admin users through API
-      const response = await axios.post('http://localhost:5000/web/login', {
+      const response = await axios.post('http://localhost:5000/api/auth-web/manager/login', {
         email,
-        password,
-        role,
+        password
       });
 
-      const { token, role: userRole } = response.data;
-      const userData = { token, role: userRole, email };
+      const { token, user } = response.data;
+      const userData = { token, role: 'manager', email: user.email };
 
       // Store in session storage
       sessionStorage.setItem('authToken', token);
-      sessionStorage.setItem('role', userRole);
-      sessionStorage.setItem('email', email);
+      sessionStorage.setItem('role', 'manager');
+      sessionStorage.setItem('email', user.email);
 
       // Update auth context
       login(userData);
 
-      console.log(`${userRole} login successful`);
-
-      // Navigate based on role
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'manager':
-          navigate('/manager/dashboard');
-          break;
-        case 'trainer':
-          navigate('/trainer/dashboard');
-          break;
-        default:
-          setErrorMessage('Invalid user role');
-      }
+      console.log('Manager login successful');
+      navigate('/manager/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       setErrorMessage(error.response?.data?.message || 'Login failed. Please try again.');
