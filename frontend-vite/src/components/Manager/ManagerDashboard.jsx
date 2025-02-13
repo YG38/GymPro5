@@ -27,12 +27,25 @@ const ManagerDashboard = () => {
     }
   };
 
-  return (
-    <div className="manager-dashboard">
-      <h1>Manager Dashboard</h1>
+  const styles = {
+    container: {
+      padding: '20px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    },
+    title: {
+      color: '#333',
+      marginBottom: '20px'
+    },
+    section: {
+      marginBottom: '30px'
+    }
+  };
 
-      {/* Trainee Management Section */}
-      <div className="trainee-management">
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>Manager Dashboard</h1>
+      <div style={styles.section}>
         <h2>Manage Trainees</h2>
         <TraineeList trainees={trainees} onDeleteTrainee={handleDeleteTrainee} />
       </div>
