@@ -38,39 +38,48 @@ const Login = () => {
         return;
       }
 
-      // Normal login for non-admin users through API
-      const response = await axios.post('http://localhost:5000/api/auth-web/web/login', {
-        email,
-        password,
-        role
-      });
+      let response;
+      if (role === 'manager') {
+        // Manager login
+        response = await axios.post('http://localhost:5000/api/auth-web/manager/login', {
+          email,
+          password
+        });
+        
+        const { token, user } = response.data;
+        const userData = { token, role: 'manager', email: user.email };
 
-      const { token, role: userRole } = response.data;
-      const userData = { token, role: userRole, email };
+        // Store in session storage
+        sessionStorage.setItem('authToken', token);
+        sessionStorage.setItem('role', 'manager');
+        sessionStorage.setItem('email', user.email);
 
-      // Store in session storage
-      sessionStorage.setItem('authToken', token);
-      sessionStorage.setItem('role', userRole);
-      sessionStorage.setItem('email', email);
+        // Update auth context
+        login(userData);
 
-      // Update auth context
-      login(userData);
+        console.log('Manager login successful');
+        navigate('/manager/dashboard');
+      } else {
+        // Trainer login
+        response = await axios.post('http://localhost:5000/api/auth-web/web/login', {
+          email,
+          password,
+          role
+        });
 
-      console.log(`${userRole} login successful`);
+        const { token, role: userRole } = response.data;
+        const userData = { token, role: userRole, email };
 
-      // Navigate based on role
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'manager':
-          navigate('/manager/dashboard');
-          break;
-        case 'trainer':
-          navigate('/trainer/dashboard');
-          break;
-        default:
-          setErrorMessage('Invalid user role');
+        // Store in session storage
+        sessionStorage.setItem('authToken', token);
+        sessionStorage.setItem('role', userRole);
+        sessionStorage.setItem('email', email);
+
+        // Update auth context
+        login(userData);
+
+        console.log('Trainer login successful');
+        navigate('/trainer/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
