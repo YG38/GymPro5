@@ -47,7 +47,7 @@ app.use((req, res, next) => {
     console.log('📦 Request Body:', req.body);
   }
   next();
-});z
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
