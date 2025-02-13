@@ -26,18 +26,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
-
-// Log request details for debugging
-app.use((req, res, next) => {
-  console.log(`Incoming Request: ${req.method} ${req.url}`);
-  if (req.method !== 'GET') {
-    console.log('Request Body:', req.body);
-  }
-  next();
-});
-
 // Debugging MongoDB Connection
 if (!process.env.MONGODB_URI) {
   console.error("❌ MONGODB_URI is not set in .env file!");
