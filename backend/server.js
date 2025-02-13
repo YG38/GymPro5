@@ -31,7 +31,7 @@ const __filename = new URL(import.meta.url).pathname;
 const __dirname = path.dirname(__filename);
 
 // Ensure the uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(path.dirname(__filename), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -49,7 +49,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadDir));
 
 // Log request details for debugging
 app.use((req, res, next) => {
