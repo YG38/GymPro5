@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';  // Custom AuthContext for authentication
+import { useAuth } from './context/AuthContext';
 
 import HomePage from './pages/HomePage';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -30,19 +30,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Default route: Redirect based on user role */}
-        <Route 
-          path="/" 
-          element={<Navigate to={getRedirectPath(user)} replace />} 
-        />
-        
-        {/* Login route */}
+        {/* Public route - Login */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to={getRedirectPath(user)} replace /> : <Login />} 
+          element={user ? <Navigate to={getRedirectPath(user)} /> : <Login />} 
         />
 
-        {/* Protected routes for specific roles */}
+        {/* Protected routes */}
         <Route 
           path="/admin/dashboard/*" 
           element={
@@ -53,7 +47,7 @@ function App() {
         />
 
         <Route 
-          path="/manager/dashboard/:gymId" 
+          path="/manager/dashboard" 
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <ManagerDashboard />
@@ -62,7 +56,7 @@ function App() {
         />
 
         <Route 
-          path="/trainer/dashboard/:trainerId" 
+          path="/trainer/dashboard" 
           element={
             <ProtectedRoute allowedRoles={['trainer']}>
               <TrainerDashboard />
@@ -70,10 +64,15 @@ function App() {
           } 
         />
 
-        {/* Catch-all route */}
+        {/* Default and catch-all routes */}
+        <Route 
+          path="/" 
+          element={<Navigate to={getRedirectPath(user)} />} 
+        />
+
         <Route 
           path="*" 
-          element={<Navigate to={getRedirectPath(user)} replace />} 
+          element={<Navigate to={getRedirectPath(user)} />} 
         />
       </Routes>
     </Router>
