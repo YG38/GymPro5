@@ -74,21 +74,28 @@ export const addGymWithManager = async (gymData) => {
     });
     
     console.log('Server response:', response.data);
+    
+    if (!response.data.success && response.data.error) {
+      throw new Error(response.data.error);
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Error in addGymWithManager:', error);
-    console.error('Error response:', error.response?.data);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     
     // Throw a more informative error
-    if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    } else if (error.response?.data?.message) {
-      throw new Error(error.response.data.message);
-    } else if (error.message) {
-      throw new Error(error.message);
-    } else {
-      throw new Error('An unexpected error occurred while adding the gym');
-    }
+    const errorMessage = 
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message ||
+      'An unexpected error occurred while adding the gym';
+    
+    throw new Error(errorMessage);
   }
 };
 
@@ -103,10 +110,12 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/web/gym");
-    return response.data;
+    const response = await API.get("/web/gyms");
+    console.log('Fetched gyms response:', response.data);
+    return response.data.gyms || [];
   } catch (error) {
-    throw error;
+    console.error('Error fetching gyms:', error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch gyms');
   }
 };
 

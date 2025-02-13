@@ -181,12 +181,20 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
 
 // Get all gyms
 router.get("/gyms", async (req, res) => {
+  console.log('Fetching all gyms - Request received');
   try {
-    const gyms = await Gym.find({});
-    res.json(gyms);
+    const gyms = await Gym.find({}).select('-managerPassword'); // Exclude sensitive data
+    console.log(`Successfully fetched ${gyms.length} gyms`);
+    console.log('Sending response with gyms data');
+    res.json({ success: true, gyms: gyms });
   } catch (error) {
     console.error('Error fetching gyms:', error);
-    res.status(500).json({ error: "Error fetching gyms" });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      error: "Error fetching gyms",
+      message: error.message 
+    });
   }
 });
 
