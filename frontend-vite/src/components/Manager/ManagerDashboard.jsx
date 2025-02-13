@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import TraineeList from "./TraineeList";
 import TrainerList from "./TrainerList";
 import GymDetails from "./GymDetails";
+import './ManagerDashboard.css';
 
 const ManagerDashboard = () => {
   const { user } = useAuth();
