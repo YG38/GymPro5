@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import User from '../models/User.js';
+import WebUser from '../models/WebUser.js'; // Ensure this is the correct model for managers
 
 dotenv.config();  // Load environment variables
 
@@ -61,6 +62,32 @@ router.post('/web/login', async (req, res) => {
     );
 
     res.json({ token, role: user.role });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Manager Login Route
+router.post('/manager/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find the user by email
+    const user = await WebUser.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare the password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Create and return a JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user._id, email: user.email } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
