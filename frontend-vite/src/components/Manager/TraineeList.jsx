@@ -1,67 +1,67 @@
-import React from "react";
+import React from 'react';
 
 const TraineeList = ({ trainees, onDeleteTrainee }) => {
   const styles = {
-    list: {
+    container: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
       gap: '20px',
-      marginTop: '20px'
+      padding: '20px 0'
     },
-    item: {
-      background: '#fff',
-      padding: '20px',
+    traineeCard: {
+      backgroundColor: 'white',
       borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    },
-    info: {
-      marginBottom: '15px'
+      padding: '15px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
     },
     name: {
+      fontSize: '18px',
+      fontWeight: '500',
       color: '#333',
-      margin: '0 0 10px 0'
+      margin: '10px 0'
     },
-    text: {
-      margin: '5px 0',
-      color: '#666'
+    info: {
+      color: '#666',
+      fontSize: '14px'
     },
-    actions: {
-      display: 'flex',
-      justifyContent: 'flex-end'
-    },
-    button: {
-      backgroundColor: '#dc3545',
+    deleteButton: {
+      backgroundColor: '#ff4d4f',
       color: 'white',
       border: 'none',
       padding: '8px 16px',
       borderRadius: '4px',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      marginTop: 'auto'
+    },
+    noTrainees: {
+      textAlign: 'center',
+      color: '#666',
+      padding: '20px'
     }
   };
 
+  if (!trainees?.length) {
+    return <div style={styles.noTrainees}>No trainees found</div>;
+  }
+
   return (
-    <div style={styles.list}>
-      {trainees.length > 0 ? (
-        trainees.map((trainee) => (
-          <div key={trainee._id} style={styles.item}>
-            <div style={styles.info}>
-              <h4 style={styles.name}>{trainee.name}</h4>
-              <p style={styles.text}>Email: {trainee.email}</p>
-              <p style={styles.text}>Status: {trainee.status || 'Active'}</p>
-            </div>
-            <div style={styles.actions}>
-              <button
-                onClick={() => onDeleteTrainee(trainee._id)}
-                style={styles.button}
-              >
-                Remove Trainee
-              </button>
-            </div>
-          </div>
-        ))
-      ) : (
-        <p>No trainees found.</p>
-      )}
+    <div style={styles.container}>
+      {trainees.map((trainee) => (
+        <div key={trainee._id} style={styles.traineeCard}>
+          <h3 style={styles.name}>{trainee.name}</h3>
+          <p style={styles.info}>Email: {trainee.email}</p>
+          <p style={styles.info}>Membership: {trainee.membershipType || 'Standard'}</p>
+          <button
+            onClick={() => onDeleteTrainee(trainee._id)}
+            style={styles.deleteButton}
+          >
+            Delete Trainee
+          </button>
+        </div>
+      ))}
     </div>
   );
 };

@@ -10,7 +10,12 @@ const router = express.Router();
 // Ensure the uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads', 'gym_logos');
 if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        console.log(`Created directory: ${uploadsDir}`);
+    } catch (error) {
+        console.error(`Error creating directory: ${uploadsDir}`, error);
+    }
 }
 
 // Set up multer for file upload

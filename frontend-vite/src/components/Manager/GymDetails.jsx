@@ -1,66 +1,72 @@
-import React, { useState } from 'react';
-import { updateLocation } from '../../api/api';
+import React from 'react';
 
-const GymDetails = ({ gym, onUpdateLocation }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newLocation, setNewLocation] = useState(gym?.location || '');
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await onUpdateLocation(newLocation);
-      setIsEditing(false);
-      setError('');
-    } catch (error) {
-      setError('Failed to update location');
-      console.error('Error updating location:', error);
+const GymDetails = ({ gymData }) => {
+  const styles = {
+    container: {
+      marginBottom: '30px'
+    },
+    title: {
+      color: '#333',
+      marginBottom: '20px'
+    },
+    infoGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '20px',
+      padding: '20px',
+      backgroundColor: '#f8f9fa',
+      borderRadius: '8px'
+    },
+    infoCard: {
+      padding: '15px',
+      backgroundColor: 'white',
+      borderRadius: '6px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+    },
+    label: {
+      color: '#666',
+      fontSize: '0.9em',
+      marginBottom: '5px'
+    },
+    value: {
+      color: '#333',
+      fontSize: '1.1em',
+      fontWeight: '500'
     }
   };
 
-  if (!gym) {
-    return <div>No gym data available</div>;
-  }
-
   return (
-    <div className="gym-details">
-      <h3>{gym.gymName}</h3>
-      
-      <div className="gym-info">
-        <div className="gym-logo">
-          {gym.logo ? (
-            <img src={gym.logo} alt="Gym Logo" />
-          ) : (
-            <p>No logo available</p>
-          )}
+    <div style={styles.container}>
+      <h2 style={styles.title}>Gym Information</h2>
+      <div style={styles.infoGrid}>
+        <div style={styles.infoCard}>
+          <div style={styles.label}>Gym Name</div>
+          <div style={styles.value}>{gymData.gymName}</div>
         </div>
-
-        <div className="gym-location">
-          {isEditing ? (
-            <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                placeholder="Enter new location"
-                required
-              />
-              <button type="submit">Save</button>
-              <button type="button" onClick={() => setIsEditing(false)}>
-                Cancel
-              </button>
-            </form>
-          ) : (
-            <>
-              <p>Location: {gym.location}</p>
-              <button onClick={() => setIsEditing(true)}>
-                Update Location
-              </button>
-            </>
-          )}
+        <div style={styles.infoCard}>
+          <div style={styles.label}>Location</div>
+          <div style={styles.value}>{gymData.location}</div>
         </div>
-
-        {error && <div className="error-message">{error}</div>}
+        <div style={styles.infoCard}>
+          <div style={styles.label}>Manager Name</div>
+          <div style={styles.value}>{gymData.managerName}</div>
+        </div>
+        <div style={styles.infoCard}>
+          <div style={styles.label}>Manager Email</div>
+          <div style={styles.value}>{gymData.managerEmail}</div>
+        </div>
+        {gymData.prices && (
+          <>
+            <div style={styles.infoCard}>
+              <div style={styles.label}>Monthly Price</div>
+              <div style={styles.value}>${gymData.prices.monthly}</div>
+            </div>
+            <div style={styles.infoCard}>
+              <div style={styles.label}>Yearly Price</div>
+              <div style={styles.value}>${gymData.prices.yearly}</div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

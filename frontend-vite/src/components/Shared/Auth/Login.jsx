@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../../../Login.css';
 
 const Login = () => {
@@ -9,8 +9,30 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname || getDashboardPath(user.role);
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, location]);
+
+  const getDashboardPath = (role) => {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'manager':
+        return '/manager/dashboard';
+      case 'trainer':
+        return '/trainer/dashboard';
+      default:
+        return '/login';
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();

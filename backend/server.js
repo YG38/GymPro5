@@ -15,7 +15,6 @@ dotenv.config();
 
 // CORS Configuration - Allow both local and production
 const allowedOrigins = ["http://gym-pro5.vercel.app", "http://localhost:5173"];
-
 app.use(cors({
   origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -43,16 +42,15 @@ if (!process.env.MONGODB_URI) {
   console.error("❌ MONGODB_URI is not set in .env file!");
   process.exit(1);
 } else {
-  console.log('✅ MONGODB_URI loaded successfully')
+  console.log('✅ MONGODB_URI loaded successfully');
 }
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('\u2705 Connected to MongoDB')) // Unicode for 
+  .then(() => console.log('✅ Connected to MongoDB'))
   .catch(error => {
     console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   });
-
 
 // Routes
 app.get('/', (req, res) => {
@@ -63,7 +61,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes); // Android app authentication
 app.use('/api/auth-web', authWebRoutes); // Web app authentication
 
-//  Gym Routes (For AddGymForm)
+// Gym Routes (For AddGymForm)
 app.use('/api/web', gymRoutes);
 
 // 404 Handler

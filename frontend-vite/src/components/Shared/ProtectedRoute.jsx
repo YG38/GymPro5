@@ -1,20 +1,13 @@
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom"; // React Router v6
-import { useAuth } from "../../context/AuthContext"; // Ensure correct path
+import { Navigate } from "react-router-dom"; 
+import { useAuth } from "../../context/AuthContext"; 
 
 const ProtectedRoute = ({ allowedRoles, children }) => {
-  const { user, loading } = useAuth(); // Ensure useAuth() provides a loading state
+  const { user } = useAuth(); 
 
-  if (loading) {
-    return <div>Loading...</div>; // Prevents instant redirection
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />; // `replace` prevents going back to this route
-  }
-
-  if (!user.role || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+  // Redirect to login if no user or wrong role
+  if (!user?.role || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/login" replace />;
   }
 
   return children;

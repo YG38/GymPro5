@@ -119,15 +119,6 @@ export const fetchGyms = async () => {
   }
 };
 
-export const updateGym = async (gymId, gymData) => {
-  try {
-    const response = await API.put(`/web/gym/${gymId}`, gymData);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
 export const fetchGymById = async (gymId) => {
   try {
     const response = await API.get(`/web/gym/${gymId}`);
@@ -138,11 +129,26 @@ export const fetchGymById = async (gymId) => {
 };
 
 // 👨‍💼 Manager Endpoints
-export const addTrainer = async (trainerData) => {
+export const fetchGymByManagerEmail = async (email) => {
   try {
-    const response = await API.post("/manager/trainers", trainerData);
+    const response = await API.get(`/web/gym/manager/${email}`);
     return response.data;
   } catch (error) {
+    console.error('Error fetching gym by manager email:', error);
+    throw error;
+  }
+};
+
+export const addTrainer = async (trainerData) => {
+  try {
+    const response = await API.post("/web/trainer", trainerData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding trainer:', error);
     throw error;
   }
 };
@@ -225,19 +231,21 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
-    const response = await API.delete(`/trainers/${trainerId}`);
+    const response = await API.delete(`/web/trainer/${trainerId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    console.error('Error deleting trainer:', error);
+    throw new Error('Failed to delete trainer. Please try again.');
   }
 };
 
 export const deleteTrainee = async (traineeId) => {
   try {
-    const response = await API.delete(`/trainees/${traineeId}`);
+    const response = await API.delete(`/web/trainee/${traineeId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    console.error('Error deleting trainee:', error);
+    throw new Error('Failed to delete trainee. Please try again.');
   }
 };
 
@@ -251,9 +259,28 @@ export const deleteWorkoutPlan = async (planId) => {
 };
 
 // 🚪 Logout
-export const logout = (navigate) => {
-  localStorage.removeItem("token");
-  if (navigate) navigate("/login");
+export const logout = async (navigate) => {
+  try {
+    // Clear all session storage
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('email');
+    sessionStorage.removeItem('userName');
+    
+    // Remove token from localStorage
+    localStorage.removeItem('token');
+
+    // Navigate to login
+    if (navigate) {
+      navigate('/login', { replace: true });
+    }
+  } catch (error) {
+    console.error('Error during logout:', error);
+    // Still try to navigate even if there's an error
+    if (navigate) {
+      navigate('/login', { replace: true });
+    }
+  }
 };
 
 export default API;

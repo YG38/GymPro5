@@ -54,6 +54,29 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* File input styling */
+input[type="file"] {
+  padding: 8px;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  width: 100%;
+  cursor: pointer;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+  background: #1890ff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+  background: #40a9ff;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

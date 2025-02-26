@@ -1,26 +1,37 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { 
   fetchTrainees, 
   deleteTrainee, 
   fetchTrainers, 
   deleteTrainer,
-  updateLocation,
-  fetchGymByManagerEmail 
-} from "../../api/api";
+  fetchGymByManagerEmail,
+  logout
+} from "../../api/api.js";
 import TraineeList from "./TraineeList";
 import TrainerList from "./TrainerList";
+import AddTrainerForm from "./AddTrainerForm";
 
 const ManagerDashboard = () => {
   const [trainees, setTrainees] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [gymData, setGymData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+        setError('');
         const email = sessionStorage.getItem('email');
+        
+        if (!email) {
+          throw new Error('No user email found. Please login again.');
+        }
         
         // Load data in parallel
         const [gymResponse, traineesResponse, trainersResponse] = await Promise.all([
@@ -34,13 +45,18 @@ const ManagerDashboard = () => {
         setTrainers(trainersResponse.data || []);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
+        setError(error.message || 'Failed to load dashboard data');
+        // If there's an authentication error, logout
+        if (error.response?.status === 401) {
+          handleLogout();
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadDashboardData();
-  }, []);
+  }, [navigate]);
 
   const handleDeleteTrainee = async (traineeId) => {
     try {
@@ -48,6 +64,9 @@ const ManagerDashboard = () => {
       setTrainees(trainees.filter((trainee) => trainee._id !== traineeId));
     } catch (error) {
       console.error("Failed to delete trainee:", error);
+      if (error.response?.status === 401) {
+        handleLogout();
+      }
     }
   };
 
@@ -57,17 +76,26 @@ const ManagerDashboard = () => {
       setTrainers(trainers.filter((trainer) => trainer._id !== trainerId));
     } catch (error) {
       console.error("Failed to delete trainer:", error);
+      if (error.response?.status === 401) {
+        handleLogout();
+      }
     }
   };
 
-  const handleUpdateLocation = async (newLocation) => {
+  const handleAddTrainer = (newTrainer) => {
+    setTrainers([...trainers, newTrainer]);
+  };
+
+  const handleLogout = async () => {
     try {
-      if (gymData?._id) {
-        await updateLocation(gymData._id, newLocation);
-        setGymData({ ...gymData, location: newLocation });
-      }
+      // Clear auth context
+      setUser(null);
+      // Call logout function
+      await logout(navigate);
     } catch (error) {
-      console.error("Failed to update location:", error);
+      console.error("Error during logout:", error);
+      // Force navigate to login even if there's an error
+      navigate('/login', { replace: true });
     }
   };
 
@@ -77,41 +105,40 @@ const ManagerDashboard = () => {
       maxWidth: '1200px',
       margin: '0 auto'
     },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '30px'
+    },
     title: {
       color: '#333',
-      marginBottom: '20px'
+      margin: 0
+    },
+    logoutButton: {
+      backgroundColor: '#ff4d4f',
+      color: 'white',
+      border: 'none',
+      padding: '10px 20px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      transition: 'background-color 0.3s'
     },
     section: {
-      marginBottom: '30px',
       background: '#fff',
       padding: '20px',
       borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      marginBottom: '20px'
     },
-    gymDetails: {
-      display: 'grid',
-      gridTemplateColumns: 'auto 1fr',
-      gap: '20px',
-      alignItems: 'start'
-    },
-    gymInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px'
-    },
-    locationInput: {
-      padding: '8px',
-      border: '1px solid #ddd',
+    error: {
+      color: '#ff4d4f',
+      textAlign: 'center',
+      padding: '20px',
+      backgroundColor: '#fff2f0',
       borderRadius: '4px',
-      marginRight: '10px'
-    },
-    button: {
-      backgroundColor: '#1890ff',
-      color: 'white',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '4px',
-      cursor: 'pointer'
+      marginBottom: '20px'
     },
     loadingText: {
       textAlign: 'center',
@@ -126,47 +153,38 @@ const ManagerDashboard = () => {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Manager Dashboard</h1>
-
-      {/* Gym Details Section */}
-      {gymData && (
-        <div style={styles.section}>
-          <h2>Gym Details</h2>
-          <div style={styles.gymDetails}>
-            <div style={styles.gymInfo}>
-              <h3>{gymData.gymName}</h3>
-              <div>
-                <p>Current Location: {gymData.location}</p>
-                <div style={{ marginTop: '10px' }}>
-                  <input
-                    type="text"
-                    placeholder="New location"
-                    style={styles.locationInput}
-                    onChange={(e) => handleUpdateLocation(e.target.value)}
-                  />
-                  <button 
-                    style={styles.button}
-                    onClick={() => handleUpdateLocation(gymData.location)}
-                  >
-                    Update Location
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Trainer Management Section */}
-      <div style={styles.section}>
-        <h2>Manage Trainers</h2>
-        <TrainerList trainers={trainers} onDeleteTrainer={handleDeleteTrainer} />
+      <div style={styles.header}>
+        <h1 style={styles.title}>Manager Dashboard</h1>
+        <button 
+          onClick={handleLogout} 
+          style={styles.logoutButton}
+          onMouseOver={e => e.target.style.backgroundColor = '#ff7875'}
+          onMouseOut={e => e.target.style.backgroundColor = '#ff4d4f'}
+        >
+          Logout
+        </button>
       </div>
 
-      {/* Trainee Management Section */}
+      {error && <div style={styles.error}>{error}</div>}
+
       <div style={styles.section}>
-        <h2>Manage Trainees</h2>
-        <TraineeList trainees={trainees} onDeleteTrainee={handleDeleteTrainee} />
+        <AddTrainerForm onAddTrainer={handleAddTrainer} />
+      </div>
+
+      <div style={styles.section}>
+        <h2>Trainers</h2>
+        <TrainerList 
+          trainers={trainers} 
+          onDeleteTrainer={handleDeleteTrainer} 
+        />
+      </div>
+
+      <div style={styles.section}>
+        <h2>Trainees</h2>
+        <TraineeList 
+          trainees={trainees} 
+          onDeleteTrainee={handleDeleteTrainee} 
+        />
       </div>
     </div>
   );

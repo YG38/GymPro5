@@ -2,75 +2,86 @@ import React from 'react';
 
 const TrainerList = ({ trainers, onDeleteTrainer }) => {
   const styles = {
-    list: {
+    container: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
       gap: '20px',
-      marginTop: '20px'
+      padding: '20px 0'
     },
-    item: {
-      background: '#fff',
-      padding: '20px',
+    trainerCard: {
+      backgroundColor: 'white',
       borderRadius: '8px',
+      padding: '15px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      border: '1px solid #eee'
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
     },
-    info: {
-      marginBottom: '15px'
+    photoContainer: {
+      width: '100%',
+      height: '200px',
+      borderRadius: '4px',
+      overflow: 'hidden',
+      backgroundColor: '#f0f0f0'
+    },
+    photo: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover'
     },
     name: {
+      fontSize: '18px',
+      fontWeight: '500',
       color: '#333',
-      margin: '0 0 10px 0',
-      fontSize: '18px'
+      margin: '10px 0'
     },
-    text: {
-      margin: '5px 0',
-      color: '#666'
+    email: {
+      color: '#666',
+      fontSize: '14px'
     },
-    status: {
-      display: 'inline-block',
-      padding: '4px 8px',
-      borderRadius: '4px',
-      backgroundColor: '#e6f7ff',
-      color: '#1890ff',
-      fontSize: '14px',
-      marginTop: '5px'
-    },
-    actions: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      marginTop: '15px'
-    },
-    button: {
+    deleteButton: {
       backgroundColor: '#ff4d4f',
       color: 'white',
       border: 'none',
       padding: '8px 16px',
       borderRadius: '4px',
       cursor: 'pointer',
-      transition: 'background-color 0.3s'
+      marginTop: 'auto'
+    },
+    noTrainers: {
+      textAlign: 'center',
+      color: '#666',
+      padding: '20px'
     }
   };
 
+  if (!trainers?.length) {
+    return <div style={styles.noTrainers}>No trainers found</div>;
+  }
+
   return (
-    <div style={styles.list}>
+    <div style={styles.container}>
       {trainers.map((trainer) => (
-        <div key={trainer._id} style={styles.item}>
-          <div style={styles.info}>
-            <h4 style={styles.name}>{trainer.name}</h4>
-            <p style={styles.text}>Email: {trainer.email}</p>
-            <span style={styles.status}>
-              {trainer.status || 'Active'}
-            </span>
+        <div key={trainer._id} style={styles.trainerCard}>
+          <div style={styles.photoContainer}>
+            {trainer.photo ? (
+              <img 
+                src={trainer.photo} 
+                alt={`${trainer.name}'s photo`} 
+                style={styles.photo}
+              />
+            ) : (
+              <div style={styles.photo}>No photo</div>
+            )}
           </div>
-          <div style={styles.actions}>
-            <button
-              onClick={() => onDeleteTrainer(trainer._id)}
-              style={styles.button}
-            >
-              Remove Trainer
-            </button>
-          </div>
+          <h3 style={styles.name}>{trainer.name}</h3>
+          <p style={styles.email}>{trainer.email}</p>
+          <button
+            onClick={() => onDeleteTrainer(trainer._id)}
+            style={styles.deleteButton}
+          >
+            Delete Trainer
+          </button>
         </div>
       ))}
     </div>
