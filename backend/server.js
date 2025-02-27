@@ -10,7 +10,7 @@ import gymRoutes from './routes/gym.js'; // Gym routes
 // Initialize express app
 const app = express();
 
-// Load environment variables
+// Load environment variablesvercel --prod
 dotenv.config();
 
 // CORS Configuration - Allow both local and production
