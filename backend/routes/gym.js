@@ -1,46 +1,57 @@
 import express from "express";
 import multer from "multer";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
+import crypto from "crypto";
+import Grid from "gridfs-stream";
+import { GridFsStorage } from "multer-gridfs-storage";
 import Gym from "../models/Gym.js"; 
-import fs from 'fs';
-import path from 'path';
 
 const router = express.Router();
 
-// Ensure the uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads', 'gym_logos');
-if (!fs.existsSync(uploadsDir)) {
-    try {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-        console.log(`Created directory: ${uploadsDir}`);
-    } catch (error) {
-        console.error(`Error creating directory: ${uploadsDir}`, error);
-    }
-}
+// Create a GridFS instance
+const conn = mongoose.connection;
+let gfs;
 
-// Set up multer for file upload
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
+conn.once("open", () => {
+    gfs = Grid(conn.db, mongoose.mongo);
+    gfs.collection("uploads"); // Collection name for files
+    console.log("✅ GridFS storage is ready!");
+});
+
+// Set up GridFS storage for file uploads
+const storage = new GridFsStorage({
+    url: process.env.MONGODB_URI,
+    file: (req, file) => {
+        return new Promise((resolve, reject) => {
+            crypto.randomBytes(16, (err, buf) => {
+                if (err) {
+                    return reject(err);
+                }
+                const filename = `${buf.toString("hex")}-${file.originalname}`;
+                const fileInfo = {
+                    filename,
+                    bucketName: "uploads", // Must match the collection name
+                };
+                resolve(fileInfo);
+            });
+        });
     },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
 });
 
 const upload = multer({ storage });
 
-// Define routes for gym operations
+// Register a gym with logo upload to MongoDB GridFS
 router.post('/register', upload.single('logo'), async (req, res) => {
     try {
         const { gymName, location, price, manager } = req.body;
-        const logo = req.file ? req.file.path : null;
+        const logo = req.file ? req.file.filename : null; // GridFS filename
 
         const newGym = new Gym({
             gymName,
             location,
             price,
-            logo,
+            logo, // Save GridFS filename
             manager: {
                 name: manager.name,
                 email: manager.email,
@@ -56,12 +67,34 @@ router.post('/register', upload.single('logo'), async (req, res) => {
     }
 });
 
+// Get gym list
 router.get('/gyms', async (req, res) => {
     try {
         const gyms = await Gym.find();
         res.json(gyms);
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Retrieve gym logo from GridFS
+router.get('/logo/:filename', async (req, res) => {
+    try {
+        gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
+            if (!file || file.length === 0) {
+                return res.status(404).json({ message: "No file found" });
+            }
+
+            // Check if the file is an image
+            if (file.contentType.startsWith("image/")) {
+                const readStream = gfs.createReadStream(file.filename);
+                readStream.pipe(res);
+            } else {
+                res.status(400).json({ message: "Not an image" });
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error retrieving image" });
     }
 });
 
