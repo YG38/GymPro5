@@ -1,10 +1,9 @@
 import express from 'express';
 import multer from 'multer';
-import fs from 'fs';
 import AWS from 'aws-sdk';
+import multerS3 from 'multer-s3';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
-import Gym from '../models/Gym.js';
+import fs from 'fs'; // Added for file cleanup
 
 dotenv.config();
 
@@ -12,101 +11,69 @@ const router = express.Router();
 
 // AWS S3 Configuration
 const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
 });
 
-// Define temporary upload directory
-const uploadDir = '/tmp/uploads/gym_logos';
-
-// Ensure the /tmp/uploads directory exists
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure Multer for temporary file storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
+// Set up Multer to upload directly to S3
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    acl: 'public-read', // Optional: Makes the file publicly accessible
+    key: (req, file, cb) => {
+      cb(null, `gym_logos/${Date.now()}-${file.originalname}`); // Define path and filename
     },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    },
+  }),
 });
 
-const upload = multer({ storage });
-
-// ✅ Register a Gym with S3 Logo Upload
-router.post('/register', upload.single('logo'), async (req, res) => {
-    try {
-        const { gymName, location, price, manager } = req.body;
-
-        let logoUrl = null;
-        if (req.file) {
-            const fileContent = fs.readFileSync(req.file.path);
-            const fileName = `gym_logos/${Date.now()}-${req.file.originalname}`;
-
-            // Upload to S3
-            const uploadParams = {
-                Bucket: process.env.S3_BUCKET_NAME,
-                Key: fileName,
-                Body: fileContent,
-                ContentType: req.file.mimetype,
-            };
-
-            const s3Response = await s3.upload(uploadParams).promise();
-            logoUrl = s3Response.Location;
-
-            // Clean up local temp file
-            fs.unlinkSync(req.file.path);
-        }
-
-        const newGym = new Gym({
-            gymName,
-            location,
-            price,
-            logo: logoUrl, // Store S3 URL
-            manager: {
-                name: manager.name,
-                email: manager.email,
-                password: await bcrypt.hash(manager.password, 10),
-            },
-        });
-
-        await newGym.save();
-        res.status(201).json({ message: 'Gym added successfully', logoUrl });
-    } catch (error) {
-        console.error('Error adding gym:', error);
-        res.status(500).json({ message: 'Server error' });
+// Upload Gym Logo API Endpoint
+router.post('/upload-logo', upload.single('logo'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
+
+    // File URL after uploading to S3
+    const fileUrl = req.file.location;
+
+    res.json({
+      message: 'File uploaded successfully',
+      fileUrl: fileUrl, // URL to access the uploaded file on S3
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
 });
 
-// ✅ Get Gym List
-router.get('/gyms', async (req, res) => {
-    try {
-        const gyms = await Gym.find();
-        res.json(gyms);
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+// Gym Routes (AddGymForm - Your form to add a gym)
+// Keeping your previous gym-related functionality for Vite
+router.post('/add-gym', async (req, res) => {
+  try {
+    const { name, location, price, logoUrl } = req.body;
+
+    // Assuming you want to save the gym info to a database
+    // For example, if you're using MongoDB, you can save it to a Gym model
+    const gym = new Gym({
+      name,
+      location,
+      price,
+      logoUrl,
+    });
+
+    await gym.save();
+
+    res.json({
+      message: 'Gym added successfully',
+      gym,
+    });
+  } catch (error) {
+    console.error('Error adding gym:', error);
+    res.status(500).json({ error: 'Failed to add gym' });
+  }
 });
 
-// ✅ Get Gym Logo from S3
-router.get('/logo/:fileName', async (req, res) => {
-    try {
-        const fileName = `gym_logos/${req.params.fileName}`;
-        const url = s3.getSignedUrl('getObject', {
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: fileName,
-            Expires: 60, // URL expires in 60 seconds
-        });
-
-        res.json({ logoUrl: url });
-    } catch (error) {
-        console.error('Error retrieving image:', error);
-        res.status(500).json({ message: 'Error retrieving image' });
-    }
-});
-
+// Export the router
 export default router;
