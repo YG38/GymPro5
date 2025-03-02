@@ -20,8 +20,9 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
 });
 
-// Fallback to local storage if S3 is not configured
+// Configure storage based on environment
 const storage = process.env.AWS_ACCESS_KEY_ID ? 
+  // Use S3 in production (Vercel)
   multerS3({
     s3: s3,
     bucket: process.env.S3_BUCKET_NAME,
@@ -30,23 +31,13 @@ const storage = process.env.AWS_ACCESS_KEY_ID ?
       cb(null, `gym_logos/${Date.now()}-${file.originalname}`);
     },
   }) :
-  multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = path.join(__dirname, '..', 'uploads', 'gym_logos');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
-    },
-  });
+  // Use memory storage as fallback (we'll save to disk after)
+  multer.memoryStorage();
 
 const upload = multer({ storage });
 
 // Upload Gym Logo API Endpoint
-router.post('/upload-logo', upload.single('logo'), (req, res) => {
+router.post('/upload-logo', upload.single('logo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -55,9 +46,30 @@ router.post('/upload-logo', upload.single('logo'), (req, res) => {
       });
     }
 
-    const fileUrl = process.env.AWS_ACCESS_KEY_ID ? 
-      req.file.location :
-      `${req.protocol}://${req.get('host')}/uploads/gym_logos/${req.file.filename}`;
+    let fileUrl;
+
+    if (process.env.AWS_ACCESS_KEY_ID) {
+      // If using S3, the URL is already available
+      fileUrl = req.file.location;
+    } else {
+      // If using local storage, save the file from memory
+      const uploadDir = path.join(process.cwd(), 'uploads', 'gym_logos');
+      
+      // Create directory if it doesn't exist
+      try {
+        await fs.promises.mkdir(uploadDir, { recursive: true });
+      } catch (err) {
+        if (err.code !== 'EEXIST') {
+          throw err;
+        }
+      }
+
+      const filename = `${Date.now()}-${req.file.originalname}`;
+      const filepath = path.join(uploadDir, filename);
+      
+      await fs.promises.writeFile(filepath, req.file.buffer);
+      fileUrl = `${req.protocol}://${req.get('host')}/uploads/gym_logos/${filename}`;
+    }
 
     res.json({
       success: true,
@@ -136,7 +148,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Get All Gyms Route (for Android app)
+// Get All Gyms Route
 router.get('/gyms', async (req, res) => {
   try {
     const gyms = await Gym.find({}, {
