@@ -35,13 +35,14 @@ const AddGymForm = ({ onAddGym }) => {
         formData.append('logo', fileList[0].originFileObj);
       }
 
-      console.log('Submitting form with values:', {
+      // Detailed logging of form data before submission
+      console.log('Submitting gym form with values:', {
         gymName: values.gymName,
         location: values.location,
         price: price,
         managerName: values.managerName,
         managerEmail: values.managerEmail,
-        // password omitted for security
+        logoProvided: fileList.length > 0
       });
 
       const response = await addGymWithManager(formData);
@@ -57,14 +58,9 @@ const AddGymForm = ({ onAddGym }) => {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error('Error adding gym:', error);
-      message.error(
-        error.response?.data?.error || 
-        error.message || 
-        'Failed to add gym. Please check your input and try again.'
-      );
+      console.error('Full error object:', error);
       
-      // Add more detailed error logging
+      // Detailed error logging
       if (error.response) {
         // The request was made and the server responded with a status code
         console.error('Server responded with error:', {
@@ -72,13 +68,28 @@ const AddGymForm = ({ onAddGym }) => {
           data: error.response.data,
           headers: error.response.headers
         });
+        
+        // More specific error handling based on server response
+        if (error.response.data.missingFields) {
+          message.error(`Missing fields: ${error.response.data.missingFields.join(', ')}`);
+        } else if (error.response.data.error) {
+          message.error(error.response.data.error);
+        }
       } else if (error.request) {
         // The request was made but no response was received
         console.error('No response received:', error.request);
+        message.error('No response received from the server. Please check your network connection.');
       } else {
         // Something happened in setting up the request
         console.error('Error setting up request:', error.message);
       }
+      
+      // Fallback error message
+      message.error(
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to add gym. Please check your input and try again.'
+      );
     } finally {
       setLoading(false);
     }
