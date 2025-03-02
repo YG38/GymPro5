@@ -1,55 +1,25 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { Form, Input, Button, Select, Typography, message, Spin } from 'antd';
+import { UserOutlined, LockOutlined, TeamOutlined } from '@ant-design/icons';
 import { useAuth } from "../../../context/AuthContext";
 import { useNavigate } from 'react-router-dom';
-import '../../../Login.css';
+import { login as apiLogin } from '../../../api/api';
+
+const { Title, Text } = Typography;
+const { Option } = Select;
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-
+  const onFinish = async (values) => {
+    setLoading(true);
     try {
-      // Check if it's Admin login first with hardcoded credentials
-      if (email === 'ymebratu64@gmail.com' && password === 'YoniReact1@mom' && role === 'admin') {
-        const userData = {
-          token: 'admin-token',
-          role: 'admin',
-          email: 'ymebratu64@gmail.com'
-        };
-
-        // Store in session storage
-        sessionStorage.setItem('authToken', userData.token);
-        sessionStorage.setItem('role', userData.role);
-        sessionStorage.setItem('email', userData.email);
-
-        // Update auth context
-        login(userData);
-
-        console.log('Admin login successful');
-        navigate('/admin/dashboard');
-        return;
-      }
-
-      // Normal login for non-admin users through API
-      const response = await axios.post('http://localhost:5000/api/auth-web/login', {
-        email,
-        password,
-        role,
-      });
-
-      console.log('Login response:', response.data);
-
-      const { token, user, gym } = response.data;
-      console.log('Extracted data:', { token, user, gym });
-
+      const response = await apiLogin(values);
+      
+      const { token, user, gym } = response;
+      
       const userData = { 
         token, 
         role: user.role,
@@ -57,23 +27,16 @@ const Login = () => {
         gym 
       };
 
-      console.log('User data to store:', userData);
-
       // Store in session storage
       sessionStorage.setItem('authToken', token);
       sessionStorage.setItem('role', user.role);
       sessionStorage.setItem('email', user.email);
       if (gym) {
-        console.log('Storing gym data:', gym);
         sessionStorage.setItem('gymData', JSON.stringify(gym));
-      } else {
-        console.warn('No gym data received for manager');
       }
 
       // Update auth context
       login(userData);
-
-      console.log(`${user.role} login successful, navigating to dashboard`);
 
       // Navigate based on role
       switch (user.role) {
@@ -87,55 +50,105 @@ const Login = () => {
           navigate('/trainer/dashboard');
           break;
         default:
-          setErrorMessage('Invalid user role');
+          message.error('Invalid user role');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setErrorMessage(error.response?.data?.message || 'Login failed. Please try again.');
+      message.error(error.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <form onSubmit={handleLogin} className="login-form">
-        <h2>Login</h2>
-        {errorMessage && <div className="error-message">{errorMessage}</div>}
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      backgroundColor: '#f0f2f5'
+    }}>
+      <div style={{
+        width: 400,
+        padding: 24,
+        backgroundColor: 'white',
+        borderRadius: 8,
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }}>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
+          GymPro Login
+        </Title>
         
-        <div className="form-group">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        
-        <div className="form-group">
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        
-        <div className="form-group">
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            required
+        <Form
+          name="login"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name="email"
+            rules={[{ 
+              required: true, 
+              message: 'Please input your email!',
+              type: 'email'
+            }]}
           >
-            <option value="">Select Role</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="trainer">Trainer</option>
-          </select>
-        </div>
+            <Input 
+              prefix={<UserOutlined />} 
+              placeholder="Email" 
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="password"
+            rules={[{ 
+              required: true, 
+              message: 'Please input your password!' 
+            }]}
+          >
+            <Input.Password 
+              prefix={<LockOutlined />} 
+              placeholder="Password" 
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="role"
+            rules={[{ 
+              required: true, 
+              message: 'Please select your role!' 
+            }]}
+          >
+            <Select 
+              placeholder="Select Role"
+              prefix={<TeamOutlined />}
+            >
+              <Option value="admin">Admin</Option>
+              <Option value="manager">Manager</Option>
+              <Option value="trainer">Trainer</Option>
+            </Select>
+          </Form.Item>
+          
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              block 
+              loading={loading}
+            >
+              Log in
+            </Button>
+          </Form.Item>
+        </Form>
         
-        <button type="submit">Login</button>
-      </form>
+        {loading && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginTop: 16 
+          }}>
+            <Spin size="large" />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
