@@ -6,39 +6,25 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "build": "echo 'No build step needed'",
+    "vercel-build": "echo 'Backend deployment'"
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "glob": "^11.0.1",
-    "gridfs-stream": "^1.1.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.11.0",
-    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "multer-gridfs-storage": "^5.0.2",
-    "multer-s3": "^3.0.1",
-    "nodemailer": "^6.9.16",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "uuid": "^11.0.5"
+    "multer-s3": "^3.0.1"
   },
   "type": "module",
   "devDependencies": {
     "nodemon": "^3.1.9"
   },
   "engines": {
-    "node": ">=14.x"
-  },
-  "vercel-build": {
-    "framework": "custom"
+    "node": "18.x"
   }
 }
