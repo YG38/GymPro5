@@ -5,8 +5,11 @@ import { useAuth } from "../../../context/AuthContext";
 import { useNavigate } from 'react-router-dom';
 import { login as apiLogin } from '../../../api/api';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
+
+const ADMIN_EMAIL = 'ymebratu64@gmail.com';
+const ADMIN_PASSWORD = 'YoniReact@1';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -16,6 +19,31 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
+      // Hardcoded admin authentication
+      if (
+        values.email === ADMIN_EMAIL && 
+        values.password === ADMIN_PASSWORD && 
+        values.role === 'admin'
+      ) {
+        const userData = {
+          token: 'admin-token',
+          role: 'admin',
+          email: ADMIN_EMAIL
+        };
+
+        // Store in session storage
+        sessionStorage.setItem('authToken', userData.token);
+        sessionStorage.setItem('role', userData.role);
+        sessionStorage.setItem('email', userData.email);
+
+        // Update auth context
+        login(userData);
+
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      // Normal login for non-admin users through API
       const response = await apiLogin(values);
       
       const { token, user, gym } = response;
