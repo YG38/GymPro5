@@ -47,10 +47,13 @@ const AddGymForm = ({ onAddGym }) => {
         errors.managerPassword = 'Password must be 8+ chars, with uppercase, lowercase, and number';
       }
 
-      // If validation errors exist, throw comprehensive error
+      // If validation errors exist, display them
       if (Object.keys(errors).length > 0) {
-        const errorMessage = Object.values(errors).join(', ');
-        throw new Error(`Validation Error: ${errorMessage}`);
+        // Display all validation errors
+        Object.entries(errors).forEach(([field, errorMessage]) => {
+          message.error(`${field}: ${errorMessage}`);
+        });
+        return;
       }
 
       // Prepare FormData with explicit type conversions
@@ -94,23 +97,17 @@ const AddGymForm = ({ onAddGym }) => {
       console.group('❌ Gym Addition Error');
       console.error('Full Error Object:', error);
       
-      // Detailed error logging
-      if (error.response) {
-        console.error('Server Response:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
+      // User-friendly error messages
+      if (error.message) {
+        // Split error messages if multiple validation errors
+        const errorMessages = error.message.split(';');
+        errorMessages.forEach(errorMsg => {
+          message.error(errorMsg.trim());
         });
+      } else {
+        message.error('Failed to add gym. Please check your input.');
       }
       
-      // User-friendly error messages
-      const errorMessage = 
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to add gym. Please check your input.';
-      
-      message.error(errorMessage);
       console.groupEnd();
 
     } finally {
