@@ -40,82 +40,82 @@ const handleMulterError = (err, req, res, next) => {
 
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
-  console.log('🔍 Full Request Received:', {
-    body: JSON.stringify(req.body),
-    files: req.file ? {
+  // Extremely verbose logging
+  console.log(' FULL REQUEST DIAGNOSTIC:', {
+    requestMethod: req.method,
+    requestUrl: req.url,
+    timestamp: new Date().toISOString(),
+    rawBody: JSON.stringify(req.body),
+    bodyType: typeof req.body,
+    bodyKeys: Object.keys(req.body),
+    fileInfo: req.file ? {
       fieldname: req.file.fieldname,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      bufferLength: req.file.buffer ? req.file.buffer.length : 'No buffer'
-    } : 'No file',
+      bufferPresent: !!req.file.buffer,
+      bufferLength: req.file.buffer ? req.file.buffer.length : 'N/A'
+    } : 'NO FILE',
     headers: JSON.stringify(req.headers)
   });
 
   try {
+    // Destructure with default empty strings to prevent undefined errors
     const { 
-      gymName, 
-      location, 
-      price, 
-      managerName, 
-      managerEmail, 
-      managerPassword 
+      gymName = '', 
+      location = '', 
+      price = '', 
+      managerName = '', 
+      managerEmail = '', 
+      managerPassword = ''
     } = req.body;
-    
-    // Comprehensive field validation
-    const validateField = (fieldName, value, validators = []) => {
-      const errors = validators.map(validator => validator(value)).filter(Boolean);
-      return errors.length > 0 ? errors : null;
-    };
 
-    const validations = {
-      gymName: validateField('Gym Name', gymName, [
-        value => !value && 'Gym name is required',
-        value => value && value.trim().length < 2 && 'Gym name must be at least 2 characters'
-      ]),
-      location: validateField('Location', location, [
-        value => !value && 'Location is required',
-        value => value && value.trim().length < 5 && 'Location must be at least 5 characters'
-      ]),
-      price: validateField('Price', price, [
-        value => !value && 'Price is required',
-        value => {
-          const parsed = parseFloat(value);
-          return (isNaN(parsed) || parsed <= 0) && 'Price must be a positive number'
-        }
-      ]),
-      managerName: validateField('Manager Name', managerName, [
-        value => !value && 'Manager name is required',
-        value => value && value.trim().length < 2 && 'Manager name must be at least 2 characters'
-      ]),
-      managerEmail: validateField('Manager Email', managerEmail, [
-        value => !value && 'Email is required',
-        value => value && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value) && 'Invalid email format'
-      ]),
-      managerPassword: validateField('Manager Password', managerPassword, [
-        value => !value && 'Password is required',
-        value => value && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(value) && 
-                'Password must be 8+ chars, with uppercase, lowercase, and number'
-      ])
-    };
+    // Comprehensive validation with detailed error tracking
+    const errors = {};
 
-    // Collect and report all validation errors
-    const allErrors = Object.entries(validations)
-      .filter(([_, errors]) => errors)
-      .reduce((acc, [field, errors]) => {
-        acc[field] = errors;
-        return acc;
-      }, {});
+    // Gym Name Validation
+    if (!gymName || gymName.trim().length < 2) {
+      errors.gymName = 'Gym name must be at least 2 characters long';
+    }
 
-    if (Object.keys(allErrors).length > 0) {
-      console.error('❌ Validation Errors:', allErrors);
+    // Location Validation
+    if (!location || location.trim().length < 5) {
+      errors.location = 'Location must be at least 5 characters long';
+    }
+
+    // Price Validation
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      errors.price = 'Price must be a valid positive number';
+    }
+
+    // Manager Name Validation
+    if (!managerName || managerName.trim().length < 2) {
+      errors.managerName = 'Manager name must be at least 2 characters long';
+    }
+
+    // Email Validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!managerEmail || !emailRegex.test(managerEmail.trim())) {
+      errors.managerEmail = 'Please enter a valid email address';
+    }
+
+    // Password Validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    if (!managerPassword || !passwordRegex.test(managerPassword)) {
+      errors.managerPassword = 'Password must be 8+ chars, with uppercase, lowercase, and number';
+    }
+
+    // If any errors exist, return detailed error response
+    if (Object.keys(errors).length > 0) {
+      console.error(' VALIDATION ERRORS:', errors);
       return res.status(400).json({ 
         error: "Validation failed", 
-        details: allErrors 
+        details: errors 
       });
     }
 
-    console.log('✅ All validations passed. Proceeding with gym creation...');
+    console.log(' All validations passed. Proceeding with gym creation...');
 
     console.log('Processing gym creation with data:', {
       gymName,
@@ -201,16 +201,16 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       throw innerError;
     }
   } catch (error) {
-    console.error('❌ Unexpected Gym Creation Error:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+    console.error(' CRITICAL UNEXPECTED ERROR:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      requestBody: JSON.stringify(req.body)
     });
 
     res.status(500).json({ 
-      error: "Unexpected error during gym creation", 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: "Unexpected server error during gym creation", 
+      details: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
     });
   }
 });

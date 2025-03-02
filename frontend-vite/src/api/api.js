@@ -99,9 +99,19 @@ export const addGymWithManager = async (gymData) => {
     });
     console.groupEnd();
     
-    // Enhanced error handling
+    // Enhanced error handling with detailed error parsing
     if (error.response) {
-      // The request was made and the server responded with a status code
+      // Handle detailed validation errors
+      if (error.response.data.details) {
+        const detailedErrors = error.response.data.details;
+        const errorMessages = Object.entries(detailedErrors)
+          .map(([field, messages]) => `${field}: ${messages}`)
+          .join('; ');
+        
+        throw new Error(errorMessages || 'Validation failed');
+      }
+
+      // Fallback to generic server error
       throw new Error(
         error.response.data.error || 
         error.response.data.message || 
