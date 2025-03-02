@@ -60,13 +60,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(error => {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  });
+// MongoDB Connection with retries
+const connectWithRetry = () => {
+  const options = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  };
+
+  mongoose.connect(process.env.MONGODB_URI, options)
+    .then(() => {
+      console.log('✅ Connected to MongoDB');
+    })
+    .catch(err => {
+      console.error('❌ MongoDB connection error:', err);
+      console.log('Retrying in 5 seconds...');
+      setTimeout(connectWithRetry, 5000);
+    });
+};
+
+connectWithRetry();
 
 // Handle MongoDB connection events
 mongoose.connection.on('error', err => {
@@ -93,6 +107,14 @@ app.use('/auth', authRoutes);
 app.use('/api/auth', authWebRoutes);     // Web app authentication
 app.use('/api/gyms', gymRoutes);           // Gym routes
 app.use('/api/android', androidGymsRoutes); // Android gyms route
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
 // Global Error Handler
 app.use((err, req, res, next) => {
