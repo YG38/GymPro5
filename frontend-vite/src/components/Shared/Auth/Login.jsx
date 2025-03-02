@@ -39,6 +39,7 @@ const Login = () => {
         // Update auth context
         login(userData);
 
+        // Explicitly navigate to admin dashboard
         navigate('/admin/dashboard');
         return;
       }
