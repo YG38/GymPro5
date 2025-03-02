@@ -1,9 +1,17 @@
 // app.js
-const express = require('express');
-const connectDB = require('./config/db');  // Assuming you have a config to connect to MongoDB
-const authRoutes = require('./routes/auth');  // Import routes for authentication
-require('dotenv').config();
-const cors = require('cors');
+import express from 'express';
+import connectDB from './config/db.js';
+import authRoutes from './routes/auth.js';
+import gymRoutes from './routes/gym.js';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -11,21 +19,38 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(express.json());  // Middleware to parse incoming JSON requests
-app.use(cors());  // Enable CORS for all domains (you can restrict it if needed)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configure CORS
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://gym-pro5.vercel.app'
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/auth', authRoutes);  // Use auth routes for /api/auth/*
+app.use('/api/auth', authRoutes);
+app.use('/api/web', gymRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
-// Error handling middleware (optional)
+// Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err);
-    res.status(500).send('Something went wrong!');
+    console.error('Error:', err);
+    res.status(err.status || 500).json({
+        success: false,
+        error: err.message || 'Something went wrong!'
+    });
 });
 
 // Start the server

@@ -2,45 +2,73 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import fs from 'fs'; // Added for file cleanup
-import authRoutes from './routes/auth.js'; // Android app authentication
-import authWebRoutes from './routes/auth-web.js'; // Web app authentication
-import gymRoutes from './routes/gym.js'; // Gym routes
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import authRoutes from './routes/auth.js';
+import authWebRoutes from './routes/auth-web.js';
+import gymRoutes from './routes/gym.js';
+import androidRoutes from './routes/android.js';
 
-// Initialize express app
+// Initialize express app and __dirname equivalent for ES modules
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
 
 // Ensure required environment variables are set
-if (!process.env.MONGODB_URI) {
-  console.error("❌ MONGODB_URI is not set in .env file!");
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
   process.exit(1);
 } else {
-  console.log('✅ MONGODB_URI loaded successfully');
+  console.log('✅ All required environment variables loaded');
 }
 
-// CORS Configuration - Allow both local and production
-const allowedOrigins = ["http://gym-pro5.vercel.app", "http://localhost:5173"];
+// CORS Configuration
+const allowedOrigins = [
+  'https://gym-pro5.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Middleware to parse request body
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads', 'gym_logos');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// Log request details for debugging
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Request logging middleware
 app.use((req, res, next) => {
-  console.log(`Incoming Request: ${req.method} ${req.url}`);
-  if (req.method !== 'GET') {
-    console.log('Request Body:', req.body);
+  console.log(`📝 ${req.method} ${req.url}`);
+  if (req.method !== 'GET' && req.body) {
+    const sanitizedBody = { ...req.body };
+    if (sanitizedBody.password) sanitizedBody.password = '[REDACTED]';
+    console.log('Request Body:', sanitizedBody);
   }
   next();
 });
@@ -53,17 +81,21 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
-// Routes
+// Health check route
 app.get('/', (req, res) => {
-  res.json({ status: 'success', message: 'Welcome to GymPro5 API' });
+  res.json({ 
+    status: 'success',
+    message: 'Welcome to GymPro5 API',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Authentication Routes
-app.use('/api/auth', authRoutes); // Android app authentication
-app.use('/api/auth-web', authWebRoutes); // Web app authentication
-
-// Gym Routes (For AddGymForm)
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/auth-web', authWebRoutes);
 app.use('/api/web', gymRoutes);
+app.use('/api/android', androidRoutes); 
 
 // 404 Handler
 app.use((req, res) => {
@@ -73,32 +105,41 @@ app.use((req, res) => {
   });
 });
 
-// Global Error Handling
+// Global Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
-  console.error('Stack:', err.stack);
   
-  // Clean up any uploaded files if there's an error
-  if (req.file) {
+  // Clean up uploaded files on error
+  if (req.file?.path) {
     try {
       fs.unlinkSync(req.file.path);
-      console.log('Cleaned up uploaded file after error');
+      console.log('✅ Cleaned up uploaded file after error');
     } catch (unlinkError) {
-      console.error('Error cleaning up file:', unlinkError);
+      console.error('❌ Error cleaning up file:', unlinkError);
     }
   }
   
-  res.status(500).json({ 
-    success: false, 
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+  // Send appropriate error response
+  const statusCode = err.status || 500;
+  const errorResponse = {
+    success: false,
+    message: err.message || 'Internal server error'
+  };
+
+  // Add stack trace in development
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.stack = err.stack;
+  }
+
+  res.status(statusCode).json(errorResponse);
 });
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🔗 Local: http://localhost:${PORT}`);
+  console.log(`
+🚀 Server is running!
+🔗 Local: http://localhost:${PORT}
+📝 Environment: ${process.env.NODE_ENV || 'development'}
+  `);
 });

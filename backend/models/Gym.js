@@ -7,7 +7,8 @@ const GymSchema = new mongoose.Schema({
     required: [true, 'Gym name is required'],
     trim: true,
     minlength: [2, 'Gym name must be at least 2 characters long'],
-    maxlength: [50, 'Gym name cannot exceed 50 characters']
+    maxlength: [50, 'Gym name cannot exceed 50 characters'],
+    unique: true
   },
   location: {
     type: String,
@@ -58,18 +59,15 @@ const GymSchema = new mongoose.Schema({
     trim: true
   }
 }, {
-  timestamps: true, // Adds createdAt and updatedAt fields
+  timestamps: true,
   toJSON: {
     transform: function(doc, ret) {
-      delete ret.managerPassword; // Remove password when converting to JSON
+      delete ret.managerPassword;
       return ret;
     }
   }
 });
 
-// Add index for faster lookups
-GymSchema.index({ gymName: 1 }, { unique: true });
-GymSchema.index({ managerEmail: 1 }, { unique: true });
-
+// No need for explicit index creation since we're using unique: true in the schema
 const Gym = mongoose.model('Gym', GymSchema);
 export default Gym;
