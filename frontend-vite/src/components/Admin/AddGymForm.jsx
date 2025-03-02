@@ -63,6 +63,22 @@ const AddGymForm = ({ onAddGym }) => {
         error.message || 
         'Failed to add gym. Please check your input and try again.'
       );
+      
+      // Add more detailed error logging
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        console.error('Server responded with error:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+      } else {
+        // Something happened in setting up the request
+        console.error('Error setting up request:', error.message);
+      }
     } finally {
       setLoading(false);
     }
