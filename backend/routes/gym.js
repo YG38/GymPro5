@@ -1,79 +1,135 @@
 import express from 'express';
 import multer from 'multer';
-import AWS from 'aws-sdk';
-import multerS3 from 'multer-s3';
-import dotenv from 'dotenv';
-import fs from 'fs'; // Added for file cleanup
-
-dotenv.config();
+import Gym from '../models/Gym.js';
 
 const router = express.Router();
 
-// AWS S3 Configuration
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
-
-// Set up Multer to upload directly to S3
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.S3_BUCKET_NAME,
-    acl: 'public-read', // Optional: Makes the file publicly accessible
-    key: (req, file, cb) => {
-      cb(null, `gym_logos/${Date.now()}-${file.originalname}`); // Define path and filename
-    },
-  }),
-});
-
-// Upload Gym Logo API Endpoint
-router.post('/upload-logo', upload.single('logo'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    // File URL after uploading to S3
-    const fileUrl = req.file.location;
-
-    res.json({
-      message: 'File uploaded successfully',
-      fileUrl: fileUrl, // URL to access the uploaded file on S3
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload file' });
+// Simple in-memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
-// Gym Routes (AddGymForm - Your form to add a gym)
-// Keeping your previous gym-related functionality for Vite
-router.post('/add-gym', async (req, res) => {
+// Upload Gym Logo API Endpoint
+router.post('/upload-logo', upload.single('logo'), async (req, res) => {
   try {
-    const { name, location, price, logoUrl } = req.body;
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No file uploaded' 
+      });
+    }
 
-    // Assuming you want to save the gym info to a database
-    // For example, if you're using MongoDB, you can save it to a Gym model
+    // For demo purposes, generate a placeholder URL
+    const timestamp = Date.now();
+    const filename = `${timestamp}-${req.file.originalname}`;
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+    
+    res.json({
+      success: true,
+      message: 'File uploaded successfully',
+      fileUrl
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload file' 
+    });
+  }
+});
+
+// Add Gym Route
+router.post('/register', async (req, res) => {
+  try {
+    const { name, location, price, managerName, managerEmail, managerPassword, logoUrl } = req.body;
+
+    // Validate required fields
+    if (!name || !location || !price || !managerName || !managerEmail || !managerPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields' 
+      });
+    }
+
+    // Check if gym with same name exists
+    const existingGym = await Gym.findOne({ gymName: name });
+    if (existingGym) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Gym with this name already exists' 
+      });
+    }
+
+    // Check if manager email is already registered
+    const existingManager = await Gym.findOne({ managerEmail });
+    if (existingManager) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Manager email already registered' 
+      });
+    }
+
     const gym = new Gym({
-      name,
+      gymName: name,
       location,
-      price,
-      logoUrl,
+      price: parseFloat(price),
+      managerName,
+      managerEmail,
+      managerPassword,
+      logo: logoUrl || null // Store logo URL or null if not provided
     });
 
     await gym.save();
 
-    res.json({
-      message: 'Gym added successfully',
-      gym,
+    res.status(201).json({
+      success: true,
+      message: 'Gym registered successfully',
+      gym: {
+        id: gym._id,
+        name: gym.gymName,
+        location: gym.location,
+        price: gym.price,
+        logo: gym.logo
+      }
     });
   } catch (error) {
-    console.error('Error adding gym:', error);
-    res.status(500).json({ error: 'Failed to add gym' });
+    console.error('Error registering gym:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to register gym' 
+    });
   }
 });
 
-// Export the router
+// Get All Gyms Route
+router.get('/gyms', async (req, res) => {
+  try {
+    const gyms = await Gym.find({}, {
+      managerPassword: 0 // Exclude sensitive data
+    });
+
+    res.json({
+      success: true,
+      gyms: gyms.map(gym => ({
+        id: gym._id,
+        name: gym.gymName,
+        location: gym.location,
+        price: gym.price,
+        managerName: gym.managerName,
+        logo: gym.logo
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching gyms:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch gyms' 
+    });
+  }
+});
+
 export default router;
