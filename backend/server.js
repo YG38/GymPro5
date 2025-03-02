@@ -24,7 +24,6 @@ const log = (message, data = null) => {
     timestamp,
     message,
     environment: process.env.NODE_ENV,
-    isVercel: process.env.VERCEL === '1',
     ...data && { data }
   };
   console.log(JSON.stringify(logMessage));
@@ -34,12 +33,8 @@ const log = (message, data = null) => {
 log('Starting server...', {
   nodeVersion: process.version,
   platform: process.platform,
-  env: process.env.NODE_ENV,
-  isVercel: process.env.VERCEL === '1'
+  env: process.env.NODE_ENV
 });
-
-// Check if we're running on Vercel
-const isVercel = process.env.VERCEL === '1';
 
 // Ensure required environment variables are set
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
@@ -76,18 +71,6 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Only create uploads directory in development
-if (!isVercel) {
-  const fs = await import('fs');
-  const uploadsDir = path.join(__dirname, 'uploads', 'gym_logos');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    log('Created uploads directory', { path: uploadsDir });
-  }
-  // Serve static files only in development
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-}
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -166,17 +149,6 @@ app.use((err, req, res, next) => {
     url: req.originalUrl,
     method: req.method
   });
-  
-  // Clean up uploaded files on error (only in development)
-  if (!isVercel && req.file?.path) {
-    const fs = await import('fs');
-    try {
-      fs.unlinkSync(req.file.path);
-      log('Cleaned up uploaded file after error', { path: req.file.path });
-    } catch (unlinkError) {
-      log('Error cleaning up file', { error: unlinkError.message });
-    }
-  }
   
   // Send appropriate error response
   const statusCode = err.status || 500;

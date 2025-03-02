@@ -1,47 +1,17 @@
 import express from 'express';
 import multer from 'multer';
-import AWS from 'aws-sdk';
-import multerS3 from 'multer-s3';
-import dotenv from 'dotenv';
 import Gym from '../models/Gym.js';
 
-dotenv.config();
 const router = express.Router();
 
-// Check if we're running on Vercel
-const isVercel = process.env.VERCEL === '1';
-
-// AWS S3 Configuration
-const s3Config = {
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
-};
-
-let upload;
-
-if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
-  // Use S3 in production (Vercel)
-  const s3 = new AWS.S3(s3Config);
-  upload = multer({
-    storage: multerS3({
-      s3: s3,
-      bucket: process.env.S3_BUCKET_NAME,
-      acl: 'public-read',
-      key: (req, file, cb) => {
-        cb(null, `gym_logos/${Date.now()}-${file.originalname}`);
-      }
-    })
-  });
-} else {
-  // For local development, use memory storage
-  upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-  });
-}
+// Simple in-memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Upload Gym Logo API Endpoint
 router.post('/upload-logo', upload.single('logo'), async (req, res) => {
@@ -53,35 +23,9 @@ router.post('/upload-logo', upload.single('logo'), async (req, res) => {
       });
     }
 
-    let fileUrl;
-
-    if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
-      // If using S3, get the URL from S3 response
-      fileUrl = req.file.location;
-    } else {
-      // For local development, store in memory and return a temporary URL
-      const filename = `${Date.now()}-${req.file.originalname}`;
-      fileUrl = `${req.protocol}://${req.get('host')}/temp/${filename}`;
-      
-      // In development, you might want to save the file locally
-      if (!isVercel) {
-        const fs = await import('fs');
-        const path = await import('path');
-        const uploadsDir = path.join(process.cwd(), 'uploads', 'gym_logos');
-        
-        try {
-          await fs.promises.mkdir(uploadsDir, { recursive: true });
-          await fs.promises.writeFile(
-            path.join(uploadsDir, filename),
-            req.file.buffer
-          );
-        } catch (err) {
-          console.error('Local file save error:', err);
-          // Continue anyway since this is just for development
-        }
-      }
-    }
-
+    // For demo purposes, just return a temporary URL
+    const fileUrl = `${req.protocol}://${req.get('host')}/temp/${Date.now()}-${req.file.originalname}`;
+    
     res.json({
       success: true,
       message: 'File uploaded successfully',
