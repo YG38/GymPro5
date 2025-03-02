@@ -1,25 +1,56 @@
 import express from 'express';
 import Feedback from '../models/Feedback.js';
 import User from '../models/User.js';
-import { verifyToken } from '../middleware/auth.js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
+// Middleware to verify token
+const verifyToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+        return res.status(403).json({ 
+            success: false,
+            message: 'No token provided' 
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token, 
+            process.env.JWT_SECRET || 'fallback_secret_key'
+        );
+        req.user = decoded;
+        next();
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return res.status(401).json({ 
+            success: false,
+            message: 'Invalid or expired token' 
+        });
+    }
+};
+
 // Submit Feedback Route
-router.post('/submit', verifyToken, async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     try {
         const { 
-            message, 
+            name, 
             rating, 
-            category, 
-            deviceInfo 
+            message 
         } = req.body;
 
         // Validate input
-        if (!message || !rating || !category) {
+        if (!name || !rating || !message) {
             return res.status(400).json({ 
                 success: false,
-                message: 'Message, rating, and category are required' 
+                message: 'Name, rating, and message are required',
+                errors: {
+                    name: !name,
+                    rating: !rating,
+                    message: !message
+                }
             });
         }
 
@@ -35,22 +66,29 @@ router.post('/submit', verifyToken, async (req, res) => {
         // Create new feedback
         const newFeedback = new Feedback({
             userId: user._id,
-            userName: `${user.firstName} ${user.lastName}`,
-            email: user.email,
-            message,
+            name,
             rating,
-            category,
-            deviceInfo: deviceInfo || {},
+            message,
             status: 'Pending'
         });
 
         // Save feedback
         await newFeedback.save();
 
+        // Prepare response matching Android app expectation
+        const feedbackResponse = {
+            id: newFeedback._id.toString(),
+            name: newFeedback.name,
+            rating: newFeedback.rating,
+            message: newFeedback.message,
+            status: newFeedback.status,
+            createdAt: newFeedback.createdAt.toISOString()
+        };
+
         res.status(201).json({ 
             success: true,
             message: 'Feedback submitted successfully',
-            feedbackId: newFeedback._id
+            data: feedbackResponse
         });
     } catch (error) {
         console.error('Feedback submission error:', error);
@@ -62,57 +100,8 @@ router.post('/submit', verifyToken, async (req, res) => {
     }
 });
 
-// Get Feedback for Admin Dashboard
-router.get('/admin', verifyToken, async (req, res) => {
-    try {
-        // Check if user is admin (you might want to add a role check middleware)
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ 
-                success: false,
-                message: 'Access denied. Admin rights required' 
-            });
-        }
-
-        // Pagination
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-
-        // Filtering options
-        const filter = {};
-        if (req.query.status) filter.status = req.query.status;
-        if (req.query.category) filter.category = req.query.category;
-
-        // Fetch feedbacks
-        const feedbacks = await Feedback.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        // Count total feedbacks
-        const total = await Feedback.countDocuments(filter);
-
-        res.json({
-            success: true,
-            data: feedbacks,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
-                totalFeedbacks: total
-            }
-        });
-    } catch (error) {
-        console.error('Fetching feedbacks error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Server error fetching feedbacks',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
-        });
-    }
-});
-
-// Update Feedback Status (for admin)
-router.patch('/admin/:id', verifyToken, async (req, res) => {
+// Get Feedback for Admin (optional)
+router.get('/', verifyToken, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
@@ -122,42 +111,31 @@ router.patch('/admin/:id', verifyToken, async (req, res) => {
             });
         }
 
-        const { id } = req.params;
-        const { status } = req.body;
+        // Fetch all feedbacks
+        const feedbacks = await Feedback.find()
+            .sort({ createdAt: -1 })
+            .limit(50);
 
-        // Validate status
-        const validStatuses = ['Pending', 'In Review', 'Resolved', 'Closed'];
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid status' 
-            });
-        }
-
-        // Update feedback
-        const updatedFeedback = await Feedback.findByIdAndUpdate(
-            id, 
-            { status }, 
-            { new: true }
-        );
-
-        if (!updatedFeedback) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'Feedback not found' 
-            });
-        }
+        // Transform feedbacks to match Android app expectation
+        const formattedFeedbacks = feedbacks.map(feedback => ({
+            id: feedback._id.toString(),
+            name: feedback.name,
+            rating: feedback.rating,
+            message: feedback.message,
+            status: feedback.status,
+            createdAt: feedback.createdAt.toISOString()
+        }));
 
         res.json({ 
             success: true,
-            message: 'Feedback status updated',
-            feedback: updatedFeedback
+            message: 'Feedbacks retrieved successfully',
+            data: formattedFeedbacks
         });
     } catch (error) {
-        console.error('Updating feedback status error:', error);
+        console.error('Error retrieving feedbacks:', error);
         res.status(500).json({ 
             success: false,
-            message: 'Server error updating feedback status',
+            message: 'Server error retrieving feedbacks',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined 
         });
     }

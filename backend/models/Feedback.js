@@ -6,11 +6,11 @@ const FeedbackSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    userName: {
+    name: {
         type: String,
         required: true
     },
-    email: {
+    rating: {
         type: String,
         required: true
     },
@@ -18,21 +18,6 @@ const FeedbackSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true
-    },
-    rating: {
-        type: Number,
-        min: 1,
-        max: 5,
-        required: true
-    },
-    category: {
-        type: String,
-        enum: ['Bug', 'Feature Request', 'Performance', 'User Experience', 'Other'],
-        required: true
-    },
-    deviceInfo: {
-        type: Object,
-        default: {}
     },
     status: {
         type: String,
