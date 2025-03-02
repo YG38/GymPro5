@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';  
@@ -27,14 +28,21 @@ if (!process.env.MONGODB_URI) {
   console.log('✅ MONGODB_URI loaded successfully');
 }
 
-// Get the current directory from the module URL
-const __filename = new URL(import.meta.url).pathname;
+// Get the directory path in ES module
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Ensure the uploads directory exists
-const uploadDir = path.join(path.dirname(__filename), 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDir = path.resolve(__dirname, 'uploads');
+console.log('Uploads directory path:', uploadDir);
+
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log('Uploads directory created successfully');
+  }
+} catch (error) {
+  console.error('Error creating uploads directory:', error);
 }
 
 // CORS Configuration
