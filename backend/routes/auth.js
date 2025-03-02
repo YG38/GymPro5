@@ -12,67 +12,159 @@ const router = express.Router();
 router.post('/register', async (req, res) => {
     try {
         const { firstName, lastName, email, password } = req.body;
+        console.log(`[REGISTER] Attempt - Email: ${email}`);
 
-        // Check if all required fields are provided
+        // Validate input
         if (!firstName || !lastName || !email || !password) {
-            return res.status(400).json({ message: 'All fields are required' });
+            console.log('[REGISTER] Missing required fields');
+            return res.status(400).json({ 
+                success: false,
+                message: 'All fields are required',
+                fields: {
+                    firstName: !firstName,
+                    lastName: !lastName,
+                    email: !email,
+                    password: !password
+                }
+            });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            console.log(`[REGISTER] Invalid email format: ${email}`);
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid email format' 
+            });
         }
 
         // Check if the user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            console.log(`[REGISTER] User already exists: ${email}`);
+            return res.status(400).json({ 
+                success: false,
+                message: 'User already exists with this email' 
+            });
+        }
+
+        // Validate password strength
+        if (password.length < 6) {
+            console.log('[REGISTER] Password too short');
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password must be at least 6 characters long' 
+            });
         }
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create a new user with firstName and lastName
+        // Create a new user
         const newUser = new User({ 
-            firstName, 
-            lastName, 
-            email, 
-            password: hashedPassword 
+            firstName: firstName.trim(), 
+            lastName: lastName.trim(), 
+            email: email.trim().toLowerCase(), 
+            password: hashedPassword,
+            createdAt: new Date()
         });
 
         // Save the user to the database
         await newUser.save();
 
-        // Respond with success message
-        res.status(201).json({ message: 'User registered successfully' });
+        // Generate token for immediate login
+        const secret = process.env.JWT_SECRET || 'fallback_secret_key';
+        const token = jwt.sign(
+            { 
+                id: newUser._id, 
+                email: newUser.email,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName
+            }, 
+            secret, 
+            { expiresIn: '1h' }
+        );
+
+        console.log(`[REGISTER] User registered successfully: ${email}`);
+        res.status(201).json({ 
+            success: true,
+            message: 'User registered successfully',
+            token: token,
+            user: {
+                id: newUser._id,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName,
+                email: newUser.email
+            }
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('[REGISTER] Server error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during registration',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+        });
     }
 });
 
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log(`Login attempt for email: ${email}`);
+        console.log(`[LOGIN] Attempt for email: ${email}`);
+        console.log(`[LOGIN] Request body: ${JSON.stringify(req.body)}`);
 
         if (!email || !password) {
-            console.log('Missing email or password');
-            return res.status(400).json({ message: 'All fields are required' });
+            console.log('[LOGIN] Missing email or password');
+            return res.status(400).json({ 
+                success: false,
+                message: 'All fields are required' 
+            });
         }
 
-        const user = await User.findOne({ email });
+        // Find user with exact email match
+        const user = await User.findOne({ email: email.trim() });
         if (!user) {
-            console.log(`No user found with email: ${email}`);
-            return res.status(400).json({ message: 'Invalid credentials' });
+            console.log(`[LOGIN] No user found with email: ${email}`);
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
+        // Log user details for debugging
+        console.log(`[LOGIN] User found: ${JSON.stringify({
+            id: user._id,
+            email: user.email,
+            hashedPasswordLength: user.password.length
+        })}`);
+
+        // Compare passwords
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log(`[LOGIN] Password match result: ${isMatch}`);
+
         if (!isMatch) {
-            console.log(`Password mismatch for email: ${email}`);
-            return res.status(400).json({ message: 'Invalid credentials' });
+            console.log(`[LOGIN] Password mismatch for email: ${email}`);
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
-        // Use environment variable for JWT secret
+        // Generate token
         const secret = process.env.JWT_SECRET || 'fallback_secret_key';
-        const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }, 
+            secret, 
+            { expiresIn: '1h' }
+        );
 
-        console.log(`Login successful for email: ${email}`);
+        console.log(`[LOGIN] Successful for email: ${email}`);
         res.json({
             success: true,
             token: token,
@@ -85,8 +177,12 @@ router.post('/login', async (req, res) => {
             message: 'Login successful'
         });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('[LOGIN] Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error', 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+        });
     }
 });
 

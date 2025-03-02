@@ -104,7 +104,8 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 
 // Web Routes
-app.use('/api/auth', authWebRoutes);     // Web app authentication
+app.use('/api/auth', authRoutes);     // Android app authentication
+app.use('/api/auth-web', authWebRoutes);     // Web app authentication
 app.use('/api/gyms', gymRoutes);           // Gym routes
 app.use('/api/android', androidGymsRoutes); // Android gyms route
 
