@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
 
     if (!token) {
         return res.status(403).json({ 
-            success: false,
+            isSuccess: false,
             message: 'No token provided' 
         });
     }
@@ -26,7 +26,7 @@ const verifyToken = (req, res, next) => {
     } catch (error) {
         console.error('Token verification error:', error);
         return res.status(401).json({ 
-            success: false,
+            isSuccess: false,
             message: 'Invalid or expired token' 
         });
     }
@@ -44,13 +44,8 @@ router.post('/', verifyToken, async (req, res) => {
         // Validate input
         if (!name || !rating || !message) {
             return res.status(400).json({ 
-                success: false,
-                message: 'Name, rating, and message are required',
-                errors: {
-                    name: !name,
-                    rating: !rating,
-                    message: !message
-                }
+                isSuccess: false,
+                message: 'All fields are required'
             });
         }
 
@@ -58,7 +53,7 @@ router.post('/', verifyToken, async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ 
-                success: false,
+                isSuccess: false,
                 message: 'User not found' 
             });
         }
@@ -75,27 +70,19 @@ router.post('/', verifyToken, async (req, res) => {
         // Save feedback
         await newFeedback.save();
 
-        // Prepare response matching Android app expectation
-        const feedbackResponse = {
-            id: newFeedback._id.toString(),
-            name: newFeedback.name,
-            rating: newFeedback.rating,
-            message: newFeedback.message,
-            status: newFeedback.status,
-            createdAt: newFeedback.createdAt.toISOString()
-        };
+        // Log successful feedback submission
+        console.log(`Feedback submitted by ${name}`);
 
+        // Return response matching Android app expectation
         res.status(201).json({ 
-            success: true,
-            message: 'Feedback submitted successfully',
-            data: feedbackResponse
+            isSuccess: true,
+            message: 'Feedback submitted successfully'
         });
     } catch (error) {
         console.error('Feedback submission error:', error);
         res.status(500).json({ 
-            success: false,
-            message: 'Server error during feedback submission',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+            isSuccess: false,
+            message: 'Server error during feedback submission'
         });
     }
 });
@@ -106,7 +93,7 @@ router.get('/', verifyToken, async (req, res) => {
         // Check if user is admin
         if (req.user.role !== 'admin') {
             return res.status(403).json({ 
-                success: false,
+                isSuccess: false,
                 message: 'Access denied. Admin rights required' 
             });
         }
@@ -127,14 +114,14 @@ router.get('/', verifyToken, async (req, res) => {
         }));
 
         res.json({ 
-            success: true,
+            isSuccess: true,
             message: 'Feedbacks retrieved successfully',
             data: formattedFeedbacks
         });
     } catch (error) {
         console.error('Error retrieving feedbacks:', error);
         res.status(500).json({ 
-            success: false,
+            isSuccess: false,
             message: 'Server error retrieving feedbacks',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined 
         });
