@@ -10,118 +10,109 @@ const AddGymForm = ({ onAddGym }) => {
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
 
-  const validateEmail = (email) => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(String(email).toLowerCase());
-  };
-
-  const validatePassword = (password) => {
-    // At least 8 characters, one uppercase, one lowercase, one number
-    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-    return re.test(password);
-  };
-
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // Comprehensive validation
+      // Comprehensive validation with detailed error tracking
       const errors = {};
 
-      // Gym Name validation
+      // Validate each field with more robust checks
       if (!values.gymName || values.gymName.trim().length < 2) {
         errors.gymName = 'Gym name must be at least 2 characters long';
       }
 
-      // Location validation
       if (!values.location || values.location.trim().length < 5) {
         errors.location = 'Location must be at least 5 characters long';
       }
 
-      // Price validation
+      // Enhanced price validation
       const price = parseFloat(values.price);
       if (isNaN(price) || price <= 0) {
         errors.price = 'Price must be a positive number';
       }
 
-      // Manager Name validation
       if (!values.managerName || values.managerName.trim().length < 2) {
         errors.managerName = 'Manager name must be at least 2 characters long';
       }
 
-      // Email validation
-      if (!values.managerEmail || !validateEmail(values.managerEmail)) {
+      // Strict email validation
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!values.managerEmail || !emailRegex.test(values.managerEmail.trim())) {
         errors.managerEmail = 'Please enter a valid email address';
       }
 
       // Password validation
-      if (!values.managerPassword || !validatePassword(values.managerPassword)) {
-        errors.managerPassword = 'Password must be at least 8 characters, with uppercase, lowercase, and number';
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+      if (!values.managerPassword || !passwordRegex.test(values.managerPassword)) {
+        errors.managerPassword = 'Password must be 8+ chars, with uppercase, lowercase, and number';
       }
 
-      // If any errors, throw validation error
+      // If validation errors exist, throw comprehensive error
       if (Object.keys(errors).length > 0) {
-        const errorMessages = Object.values(errors).join(', ');
-        throw new Error(`Validation failed: ${errorMessages}`);
+        const errorMessage = Object.values(errors).join(', ');
+        throw new Error(`Validation Error: ${errorMessage}`);
       }
 
+      // Prepare FormData with explicit type conversions
       const formData = new FormData();
       formData.append('gymName', values.gymName.trim());
       formData.append('location', values.location.trim());
-      formData.append('price', price.toString());
+      formData.append('price', price.toFixed(2)); // Ensure consistent decimal representation
       formData.append('managerName', values.managerName.trim());
       formData.append('managerEmail', values.managerEmail.trim().toLowerCase());
       formData.append('managerPassword', values.managerPassword);
 
-      if (fileList.length > 0) {
+      // Handle logo upload
+      if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('logo', fileList[0].originFileObj);
       }
 
-      // Detailed logging
-      console.log('Submitting gym form with values:', {
-        gymName: values.gymName,
-        location: values.location,
-        price: price,
-        managerName: values.managerName,
-        managerEmail: values.managerEmail,
-        logoProvided: fileList.length > 0
-      });
+      // Extensive logging before submission
+      console.group('🏋️ Gym Submission Details');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${key === 'managerPassword' ? '********' : value}`);
+      }
+      console.groupEnd();
 
+      // Attempt to add gym
       const response = await addGymWithManager(formData);
       
-      if (response && response.gym) {
-        message.success('Gym added successfully!');
-        form.resetFields();
-        setFileList([]);
-        if (onAddGym) {
-          onAddGym(response.gym);
-        }
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      console.error('Full error object:', error);
+      // Success handling
+      message.success('Gym added successfully!');
+      form.resetFields();
+      setFileList([]);
       
-      // Detailed error logging and user feedback
+      // Optional callback if provided
+      if (onAddGym) {
+        onAddGym(response.gym);
+      }
+
+      return response;
+
+    } catch (error) {
+      // Comprehensive error handling
+      console.group('❌ Gym Addition Error');
+      console.error('Full Error Object:', error);
+      
+      // Detailed error logging
       if (error.response) {
-        console.error('Server responded with error:', {
+        console.error('Server Response:', {
           status: error.response.status,
           data: error.response.data,
           headers: error.response.headers
         });
-        
-        // More specific error handling
-        if (error.response.data.missingFields) {
-          message.error(`Missing fields: ${error.response.data.missingFields.join(', ')}`);
-        } else if (error.response.data.error) {
-          message.error(error.response.data.error);
-        }
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        message.error('No response received from the server. Please check your network connection.');
-      } else {
-        console.error('Error setting up request:', error.message);
-        message.error(error.message);
       }
+      
+      // User-friendly error messages
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to add gym. Please check your input.';
+      
+      message.error(errorMessage);
+      console.groupEnd();
+
     } finally {
       setLoading(false);
     }

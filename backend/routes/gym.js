@@ -41,11 +41,70 @@ const handleMulterError = (err, req, res, next) => {
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
   try {
-    console.log('Received request body:', req.body);
-    console.log('Received file:', req.file);
+    console.group('🏋️ Gym Creation Request');
+    console.log('Raw Request Body:', req.body);
+    console.log('Received File:', req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file');
+
+    const { 
+      gymName, 
+      location, 
+      price, 
+      managerName, 
+      managerEmail, 
+      managerPassword 
+    } = req.body;
     
-    const { gymName, location, price, managerName, managerEmail, managerPassword } = req.body;
-    
+    // Enhanced Validation with Detailed Logging
+    const missingFields = [];
+    if (!gymName) missingFields.push('gymName');
+    if (!location) missingFields.push('location');
+    if (!price) missingFields.push('price');
+    if (!managerName) missingFields.push('managerName');
+    if (!managerEmail) missingFields.push('managerEmail');
+    if (!managerPassword) missingFields.push('managerPassword');
+
+    if (missingFields.length > 0) {
+      console.error('Missing Fields:', missingFields);
+      return res.status(400).json({ 
+        error: "Missing required fields", 
+        missingFields 
+      });
+    }
+
+    // Validate Email Format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(managerEmail)) {
+      console.error('Invalid Email Format:', managerEmail);
+      return res.status(400).json({ 
+        error: "Invalid email format" 
+      });
+    }
+
+    // Validate Price
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      console.error('Invalid Price:', price);
+      return res.status(400).json({ 
+        error: "Invalid price. Must be a positive number" 
+      });
+    }
+
+    // Validate Password Complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    if (!passwordRegex.test(managerPassword)) {
+      console.error('Weak Password');
+      return res.status(400).json({ 
+        error: "Password must be 8+ chars, with uppercase, lowercase, and number" 
+      });
+    }
+
+    console.log('Validation Passed. Processing Gym Creation...');
+    console.groupEnd();
+
     // Log received data (excluding password)
     console.log('Processing gym creation with data:', {
       gymName,
@@ -56,23 +115,6 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       hasFile: !!req.file
     });
     
-    // Validate required fields
-    if (!gymName || !location || !price || !managerName || !managerEmail || !managerPassword) {
-      const missingFields = [];
-      if (!gymName) missingFields.push('gymName');
-      if (!location) missingFields.push('location');
-      if (!price) missingFields.push('price');
-      if (!managerName) missingFields.push('managerName');
-      if (!managerEmail) missingFields.push('managerEmail');
-      if (!managerPassword) missingFields.push('managerPassword');
-      
-      console.error('Missing required fields:', missingFields);
-      return res.status(400).json({ 
-        error: "Missing required fields", 
-        missingFields 
-      });
-    }
-
     // Check if a manager with this email already exists
     const existingManager = await WebUser.findOne({ email: managerEmail.toLowerCase() });
     if (existingManager) {
@@ -148,15 +190,13 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       throw innerError;
     }
   } catch (error) {
-    console.error('Error creating gym:', error);
-    console.error('Error stack:', error.stack);
+    console.group('❌ Gym Creation Error');
+    console.error('Unexpected Error:', error);
+    console.groupEnd();
+
     res.status(500).json({ 
-      error: "Error creating gym", 
-      details: error.message,
-      errorInfo: error.code ? {
-        name: error.name,
-        code: error.code
-      } : undefined
+      error: "Unexpected error during gym creation", 
+      details: error.message 
     });
   }
 });
