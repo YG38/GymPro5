@@ -3,15 +3,13 @@ import multer from 'multer';
 import AWS from 'aws-sdk';
 import multerS3 from 'multer-s3';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import Gym from '../models/Gym.js';
 
 dotenv.config();
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+// Check if we're running on Vercel
+const isVercel = process.env.VERCEL === '1';
 
 // AWS S3 Configuration
 const s3 = new AWS.S3({
@@ -21,20 +19,23 @@ const s3 = new AWS.S3({
 });
 
 // Configure storage based on environment
-const storage = process.env.AWS_ACCESS_KEY_ID ? 
+let upload;
+if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
   // Use S3 in production (Vercel)
-  multerS3({
-    s3: s3,
-    bucket: process.env.S3_BUCKET_NAME,
-    acl: 'public-read',
-    key: (req, file, cb) => {
-      cb(null, `gym_logos/${Date.now()}-${file.originalname}`);
-    },
-  }) :
-  // Use memory storage as fallback (we'll save to disk after)
-  multer.memoryStorage();
-
-const upload = multer({ storage });
+  upload = multer({
+    storage: multerS3({
+      s3: s3,
+      bucket: process.env.S3_BUCKET_NAME,
+      acl: 'public-read',
+      key: (req, file, cb) => {
+        cb(null, `gym_logos/${Date.now()}-${file.originalname}`);
+      },
+    })
+  });
+} else {
+  // For local development, just store in memory
+  upload = multer({ storage: multer.memoryStorage() });
+}
 
 // Upload Gym Logo API Endpoint
 router.post('/upload-logo', upload.single('logo'), async (req, res) => {
@@ -46,34 +47,21 @@ router.post('/upload-logo', upload.single('logo'), async (req, res) => {
       });
     }
 
-    let fileUrl;
-
-    if (process.env.AWS_ACCESS_KEY_ID) {
-      // If using S3, the URL is already available
-      fileUrl = req.file.location;
-    } else {
-      // If using local storage, save the file from memory
-      const uploadDir = path.join(process.cwd(), 'uploads', 'gym_logos');
-      
-      // Create directory if it doesn't exist
-      try {
-        await fs.promises.mkdir(uploadDir, { recursive: true });
-      } catch (err) {
-        if (err.code !== 'EEXIST') {
-          throw err;
-        }
-      }
-
-      const filename = `${Date.now()}-${req.file.originalname}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      await fs.promises.writeFile(filepath, req.file.buffer);
-      fileUrl = `${req.protocol}://${req.get('host')}/uploads/gym_logos/${filename}`;
+    // In Vercel or when S3 is configured, use S3 URL
+    if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
+      return res.json({
+        success: true,
+        message: 'File uploaded successfully',
+        fileUrl: req.file.location,
+      });
     }
 
+    // For local development only
+    const fileUrl = `${req.protocol}://${req.get('host')}/temp/${Date.now()}-${req.file.originalname}`;
+    
     res.json({
       success: true,
-      message: 'File uploaded successfully',
+      message: 'File uploaded successfully (local development)',
       fileUrl: fileUrl,
     });
   } catch (error) {
