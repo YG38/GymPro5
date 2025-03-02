@@ -56,8 +56,14 @@ const GymSchema = new mongoose.Schema({
     }
   },
   logo: {
-    type: String,
-    required: false
+    data: {
+      type: String,
+      required: false
+    },
+    contentType: {
+      type: String,
+      required: false
+    }
   },
   isDeleted: {
     type: Boolean,

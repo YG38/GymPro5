@@ -8,21 +8,8 @@ import path from 'path';
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), "uploads", "gym_logos");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Set up multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir); 
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname); 
-  },
-});
+// Use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,
@@ -109,7 +96,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       await managerUser.save();
       console.log('Manager user account created successfully');
 
-      // Create new Gym
+      // Create new Gym with base64 logo if provided
       const newGym = new Gym({
         gymName: gymName.trim(),
         location: location.trim(),
@@ -119,7 +106,10 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
           name: managerName.trim(),
           email: managerEmail.trim().toLowerCase()
         },
-        logo: req.file ? req.file.path : undefined
+        logo: req.file ? {
+          data: req.file.buffer.toString('base64'),
+          contentType: req.file.mimetype
+        } : undefined
       });
 
       console.log('Attempting to save gym:', {
@@ -149,7 +139,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       // If there's an error, clean up the uploaded file
       if (req.file) {
         try {
-          fs.unlinkSync(req.file.path);
+          // fs.unlinkSync(req.file.path); // Removed this line
           console.log('Cleaned up uploaded file after error');
         } catch (unlinkError) {
           console.error('Error cleaning up file:', unlinkError);
@@ -316,14 +306,17 @@ router.put("/manager/logo/:gymId", upload.single("logo"), handleMulterError, asy
     // Delete old logo if it exists
     if (gym.logo) {
       try {
-        fs.unlinkSync(gym.logo);
+        // fs.unlinkSync(gym.logo); // Removed this line
       } catch (error) {
         console.error('Error deleting old logo:', error);
       }
     }
 
     // Update logo
-    gym.logo = req.file.path;
+    gym.logo = {
+      data: req.file.buffer.toString('base64'),
+      contentType: req.file.mimetype
+    };
     await gym.save();
 
     res.json({ message: "Logo updated successfully", gym });
@@ -331,7 +324,7 @@ router.put("/manager/logo/:gymId", upload.single("logo"), handleMulterError, asy
     // Clean up uploaded file if there's an error
     if (req.file) {
       try {
-        fs.unlinkSync(req.file.path);
+        // fs.unlinkSync(req.file.path); // Removed this line
       } catch (unlinkError) {
         console.error('Error cleaning up file:', unlinkError);
       }
