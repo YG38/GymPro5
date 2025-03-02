@@ -2,9 +2,10 @@
   "name": "gympro5-backend",
   "version": "1.0.0",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "vercel-build": "echo 'Building backend'"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",
