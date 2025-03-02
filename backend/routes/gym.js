@@ -40,20 +40,19 @@ const handleMulterError = (err, req, res, next) => {
 
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
-  try {
-    // Log raw request details with more comprehensive logging
-    console.log('🔍 Detailed Request Details:', {
-      body: req.body,
-      file: req.file ? {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        buffer: req.file.buffer ? `Buffer of ${req.file.buffer.length} bytes` : 'No buffer'
-      } : 'No file uploaded',
-      headers: req.headers
-    });
+  console.log('🔍 Full Request Received:', {
+    body: JSON.stringify(req.body),
+    files: req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      bufferLength: req.file.buffer ? req.file.buffer.length : 'No buffer'
+    } : 'No file',
+    headers: JSON.stringify(req.headers)
+  });
 
+  try {
     const { 
       gymName, 
       location, 
@@ -63,51 +62,60 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       managerPassword 
     } = req.body;
     
-    // Enhanced Validation with Detailed Logging
-    const missingFields = [];
-    if (!gymName) missingFields.push('gymName');
-    if (!location) missingFields.push('location');
-    if (!price) missingFields.push('price');
-    if (!managerName) missingFields.push('managerName');
-    if (!managerEmail) missingFields.push('managerEmail');
-    if (!managerPassword) missingFields.push('managerPassword');
+    // Comprehensive field validation
+    const validateField = (fieldName, value, validators = []) => {
+      const errors = validators.map(validator => validator(value)).filter(Boolean);
+      return errors.length > 0 ? errors : null;
+    };
 
-    if (missingFields.length > 0) {
-      console.error('❌ Missing Fields:', missingFields);
+    const validations = {
+      gymName: validateField('Gym Name', gymName, [
+        value => !value && 'Gym name is required',
+        value => value && value.trim().length < 2 && 'Gym name must be at least 2 characters'
+      ]),
+      location: validateField('Location', location, [
+        value => !value && 'Location is required',
+        value => value && value.trim().length < 5 && 'Location must be at least 5 characters'
+      ]),
+      price: validateField('Price', price, [
+        value => !value && 'Price is required',
+        value => {
+          const parsed = parseFloat(value);
+          return (isNaN(parsed) || parsed <= 0) && 'Price must be a positive number'
+        }
+      ]),
+      managerName: validateField('Manager Name', managerName, [
+        value => !value && 'Manager name is required',
+        value => value && value.trim().length < 2 && 'Manager name must be at least 2 characters'
+      ]),
+      managerEmail: validateField('Manager Email', managerEmail, [
+        value => !value && 'Email is required',
+        value => value && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value) && 'Invalid email format'
+      ]),
+      managerPassword: validateField('Manager Password', managerPassword, [
+        value => !value && 'Password is required',
+        value => value && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(value) && 
+                'Password must be 8+ chars, with uppercase, lowercase, and number'
+      ])
+    };
+
+    // Collect and report all validation errors
+    const allErrors = Object.entries(validations)
+      .filter(([_, errors]) => errors)
+      .reduce((acc, [field, errors]) => {
+        acc[field] = errors;
+        return acc;
+      }, {});
+
+    if (Object.keys(allErrors).length > 0) {
+      console.error('❌ Validation Errors:', allErrors);
       return res.status(400).json({ 
-        error: "Missing required fields", 
-        missingFields 
+        error: "Validation failed", 
+        details: allErrors 
       });
     }
 
-    // Validate Email Format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(managerEmail)) {
-      console.error('❌ Invalid Email Format:', managerEmail);
-      return res.status(400).json({ 
-        error: "Invalid email format" 
-      });
-    }
-
-    // Validate Price
-    const parsedPrice = parseFloat(price);
-    if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      console.error('❌ Invalid Price:', price);
-      return res.status(400).json({ 
-        error: "Invalid price. Must be a positive number" 
-      });
-    }
-
-    // Validate Password Complexity
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-    if (!passwordRegex.test(managerPassword)) {
-      console.error('❌ Weak Password');
-      return res.status(400).json({ 
-        error: "Password must be 8+ chars, with uppercase, lowercase, and number" 
-      });
-    }
-
-    console.log('✅ Validation Passed. Processing Gym Creation...');
+    console.log('✅ All validations passed. Proceeding with gym creation...');
 
     console.log('Processing gym creation with data:', {
       gymName,
@@ -193,11 +201,16 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       throw innerError;
     }
   } catch (error) {
-    console.error('❌ Unexpected Gym Creation Error:', error);
+    console.error('❌ Unexpected Gym Creation Error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
 
     res.status(500).json({ 
       error: "Unexpected error during gym creation", 
-      details: error.message 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
