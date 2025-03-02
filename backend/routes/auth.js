@@ -4,7 +4,6 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
-
 dotenv.config();
 
 const router = express.Router();
@@ -50,34 +49,47 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log(`Login attempt for email: ${email}`);
 
         if (!email || !password) {
+            console.log('Missing email or password');
             return res.status(400).json({ message: 'All fields are required' });
         }
 
         const user = await User.findOne({ email });
         if (!user) {
+            console.log(`No user found with email: ${email}`);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log(`Password mismatch for email: ${email}`);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        // Create a JWT token
-        const token = jwt.sign({ id: user._id }, 'yourSecretKey', { expiresIn: '1h' });
+        // Use environment variable for JWT secret
+        const secret = process.env.JWT_SECRET || 'fallback_secret_key';
+        const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
 
+        console.log(`Login successful for email: ${email}`);
         res.json({
             success: true,
-            token: token, // Send token in response
+            token: token,
+            user: {
+                id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email
+            },
             message: 'Login successful'
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+
 // Authentication middleware (to verify token)
 const verifyToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
@@ -154,6 +166,5 @@ router.delete('/delete-account', express.json(), verifyToken, async (req, res) =
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 
 export default router;
