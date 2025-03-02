@@ -219,6 +219,18 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
   }
 };
 
+// 👥 Manager Fetching
+export const fetchManagers = async () => {
+  try {
+    const response = await API.get("/api/web/managers");
+    console.log('Fetched managers:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching managers:', error);
+    throw error;
+  }
+};
+
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
