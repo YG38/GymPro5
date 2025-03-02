@@ -17,6 +17,27 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
+// Enhanced logging function
+const log = (message, data = null) => {
+  const timestamp = new Date().toISOString();
+  const logMessage = {
+    timestamp,
+    message,
+    environment: process.env.NODE_ENV,
+    isVercel: process.env.VERCEL === '1',
+    ...data && { data }
+  };
+  console.log(JSON.stringify(logMessage));
+};
+
+// Log startup information
+log('Starting server...', {
+  nodeVersion: process.version,
+  platform: process.platform,
+  env: process.env.NODE_ENV,
+  isVercel: process.env.VERCEL === '1'
+});
+
 // Check if we're running on Vercel
 const isVercel = process.env.VERCEL === '1';
 
@@ -25,10 +46,10 @@ const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+  log('Missing required environment variables', { missing: missingEnvVars });
   process.exit(1);
 } else {
-  console.log('✅ All required environment variables loaded');
+  log('All required environment variables loaded');
 }
 
 // CORS Configuration
@@ -43,6 +64,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      log('CORS error', { origin });
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -61,6 +83,7 @@ if (!isVercel) {
   const uploadsDir = path.join(__dirname, 'uploads', 'gym_logos');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
+    log('Created uploads directory', { path: uploadsDir });
   }
   // Serve static files only in development
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -68,31 +91,56 @@ if (!isVercel) {
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`📝 ${req.method} ${req.url}`);
-  if (req.method !== 'GET' && req.body) {
-    const sanitizedBody = { ...req.body };
-    if (sanitizedBody.password) sanitizedBody.password = '[REDACTED]';
-    console.log('Request Body:', sanitizedBody);
-  }
+  const startTime = Date.now();
+  
+  // Log request
+  log('Incoming request', {
+    method: req.method,
+    url: req.url,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'user-agent': req.headers['user-agent']
+    },
+    query: req.query,
+    body: req.method !== 'GET' ? (
+      req.body.password ? 
+        { ...req.body, password: '[REDACTED]' } : 
+        req.body
+    ) : undefined
+  });
+
+  // Log response
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    log('Response sent', {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`
+    });
+  });
+
   next();
 });
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
+  .then(() => log('Connected to MongoDB'))
   .catch(error => {
-    console.error('❌ MongoDB connection error:', error);
+    log('MongoDB connection error', { error: error.message });
     process.exit(1);
   });
 
 // Health check route
 app.get('/', (req, res) => {
-  res.json({ 
+  const health = {
     status: 'success',
     message: 'Welcome to GymPro5 API',
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString()
-  });
+  };
+  log('Health check', health);
+  res.json(health);
 });
 
 // Routes
@@ -103,6 +151,7 @@ app.use('/api/android', androidRoutes);
 
 // 404 Handler
 app.use((req, res) => {
+  log('Route not found', { url: req.originalUrl });
   res.status(404).json({ 
     success: false, 
     message: `Route ${req.originalUrl} not found` 
@@ -111,16 +160,21 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
+  log('Server Error', {
+    error: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method
+  });
   
   // Clean up uploaded files on error (only in development)
   if (!isVercel && req.file?.path) {
     const fs = await import('fs');
     try {
       fs.unlinkSync(req.file.path);
-      console.log('✅ Cleaned up uploaded file after error');
+      log('Cleaned up uploaded file after error', { path: req.file.path });
     } catch (unlinkError) {
-      console.error('❌ Error cleaning up file:', unlinkError);
+      log('Error cleaning up file', { error: unlinkError.message });
     }
   }
   
@@ -142,9 +196,8 @@ app.use((err, req, res, next) => {
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`
-🚀 Server is running!
-🔗 Local: http://localhost:${PORT}
-📝 Environment: ${process.env.NODE_ENV || 'development'}
-  `);
+  log('Server started', {
+    port: PORT,
+    env: process.env.NODE_ENV || 'development'
+  });
 });
