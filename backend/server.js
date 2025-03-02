@@ -2,7 +2,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
@@ -17,6 +16,9 @@ const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
+
+// Check if we're running on Vercel
+const isVercel = process.env.VERCEL === '1';
 
 // Ensure required environment variables are set
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
@@ -53,14 +55,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads', 'gym_logos');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Only create uploads directory in development
+if (!isVercel) {
+  const fs = await import('fs');
+  const uploadsDir = path.join(__dirname, 'uploads', 'gym_logos');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  // Serve static files only in development
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 }
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -109,8 +113,9 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
   
-  // Clean up uploaded files on error
-  if (req.file?.path) {
+  // Clean up uploaded files on error (only in development)
+  if (!isVercel && req.file?.path) {
+    const fs = await import('fs');
     try {
       fs.unlinkSync(req.file.path);
       console.log('✅ Cleaned up uploaded file after error');
