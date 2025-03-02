@@ -67,7 +67,7 @@ export const addGymWithManager = async (gymData) => {
       hasLogo: gymData.has('logo')
     });
 
-    const response = await API.post("/api/web/gym", gymData, {
+    const response = await API.post("/api/gyms/gym", gymData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
