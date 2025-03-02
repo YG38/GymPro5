@@ -50,44 +50,69 @@ export const createWebSocket = (path) => {
 // 🏛️ Admin Endpoints
 export const addGymWithManager = async (gymData) => {
   try {
-    // Convert price to number
-    const price = parseFloat(gymData.get('price'));
-    if (isNaN(price)) {
-      throw new Error('Price must be a valid number');
+    // Comprehensive logging of form data
+    console.group('🏋️ Gym API Submission');
+    console.log('Submission Timestamp:', new Date().toISOString());
+    
+    // Log all form data keys for debugging
+    for (let [key, value] of gymData.entries()) {
+      // Mask sensitive information
+      console.log(`FormData Key: ${key}, Value Type: ${typeof value}, Value: ${
+        key === 'managerPassword' ? '********' : 
+        (value instanceof File ? value.name : value)
+      }`);
     }
-    gymData.set('price', price);
 
-    // Log the data being sent (excluding password)
-    console.log('Sending gym data:', {
-      gymName: gymData.get('gymName'),
-      location: gymData.get('location'),
-      price: gymData.get('price'),
-      managerName: gymData.get('managerName'),
-      managerEmail: gymData.get('managerEmail'),
-      hasLogo: gymData.has('logo')
-    });
+    // Validate price conversion
+    const price = parseFloat(gymData.get('price'));
+    if (isNaN(price) || price <= 0) {
+      throw new Error('Price must be a valid positive number');
+    }
+    gymData.set('price', price.toFixed(2));
 
+    // Perform submission with enhanced configuration
     const response = await API.post("/api/gyms/gym", gymData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      // Add timeout and detailed error handling
+      timeout: 15000,  // 15 seconds
+      transformRequest: [function (data, headers) {
+        // Ensure FormData is sent correctly
+        return data;
+      }]
     });
     
-    console.log('Server response:', response.data);
+    console.log('Server Response:', response.data);
+    console.groupEnd();
+
     return response.data;
   } catch (error) {
-    console.error('Error in addGymWithManager:', error);
-    console.error('Error response:', error.response?.data);
+    console.group('❌ Gym API Error');
+    console.error('Detailed Error Information:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorCode: error.code,
+      responseStatus: error.response?.status,
+      responseData: error.response?.data,
+      requestConfig: error.config
+    });
+    console.groupEnd();
     
-    // Throw a more informative error
-    if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    } else if (error.response?.data?.message) {
-      throw new Error(error.response.data.message);
-    } else if (error.message) {
-      throw new Error(error.message);
+    // Enhanced error handling
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      throw new Error(
+        error.response.data.error || 
+        error.response.data.message || 
+        'Server responded with an error'
+      );
+    } else if (error.request) {
+      // The request was made but no response was received
+      throw new Error('No response received from server. Check your network connection.');
     } else {
-      throw new Error('An unexpected error occurred while adding the gym');
+      // Something happened in setting up the request
+      throw new Error(error.message || 'An unexpected error occurred');
     }
   }
 };

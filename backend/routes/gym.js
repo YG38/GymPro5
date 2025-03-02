@@ -41,13 +41,16 @@ const handleMulterError = (err, req, res, next) => {
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
   try {
-    console.group('🏋️ Gym Creation Request');
-    console.log('Raw Request Body:', req.body);
-    console.log('Received File:', req.file ? {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    } : 'No file');
+    // Log raw request details
+    console.log('🔍 Raw Request Details:', {
+      body: req.body,
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : 'No file',
+      headers: req.headers
+    });
 
     const { 
       gymName, 
@@ -68,7 +71,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     if (!managerPassword) missingFields.push('managerPassword');
 
     if (missingFields.length > 0) {
-      console.error('Missing Fields:', missingFields);
+      console.error('❌ Missing Fields:', missingFields);
       return res.status(400).json({ 
         error: "Missing required fields", 
         missingFields 
@@ -78,7 +81,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     // Validate Email Format
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(managerEmail)) {
-      console.error('Invalid Email Format:', managerEmail);
+      console.error('❌ Invalid Email Format:', managerEmail);
       return res.status(400).json({ 
         error: "Invalid email format" 
       });
@@ -87,7 +90,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     // Validate Price
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      console.error('Invalid Price:', price);
+      console.error('❌ Invalid Price:', price);
       return res.status(400).json({ 
         error: "Invalid price. Must be a positive number" 
       });
@@ -96,16 +99,14 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
     // Validate Password Complexity
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
     if (!passwordRegex.test(managerPassword)) {
-      console.error('Weak Password');
+      console.error('❌ Weak Password');
       return res.status(400).json({ 
         error: "Password must be 8+ chars, with uppercase, lowercase, and number" 
       });
     }
 
-    console.log('Validation Passed. Processing Gym Creation...');
-    console.groupEnd();
+    console.log('✅ Validation Passed. Processing Gym Creation...');
 
-    // Log received data (excluding password)
     console.log('Processing gym creation with data:', {
       gymName,
       location,
