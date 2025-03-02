@@ -41,14 +41,16 @@ const handleMulterError = (err, req, res, next) => {
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
   try {
-    // Log raw request details
-    console.log('🔍 Raw Request Details:', {
+    // Log raw request details with more comprehensive logging
+    console.log('🔍 Detailed Request Details:', {
       body: req.body,
       file: req.file ? {
+        fieldname: req.file.fieldname,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
-        size: req.file.size
-      } : 'No file',
+        size: req.file.size,
+        buffer: req.file.buffer ? `Buffer of ${req.file.buffer.length} bytes` : 'No buffer'
+      } : 'No file uploaded',
       headers: req.headers
     });
 
@@ -191,9 +193,7 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       throw innerError;
     }
   } catch (error) {
-    console.group('❌ Gym Creation Error');
-    console.error('Unexpected Error:', error);
-    console.groupEnd();
+    console.error('❌ Unexpected Gym Creation Error:', error);
 
     res.status(500).json({ 
       error: "Unexpected error during gym creation", 

@@ -131,9 +131,15 @@ const AddGymForm = ({ onAddGym }) => {
         message.error('Image must be smaller than 2MB!');
         return false;
       }
-      return false;
+      
+      // Manually set the file
+      setFileList([file]);
+      return false; // Prevent default upload
     },
-    onChange: ({ fileList }) => setFileList(fileList),
+    onChange: ({ fileList }) => {
+      // This is now handled in beforeUpload
+      console.log('File List:', fileList);
+    },
     fileList,
     maxCount: 1,
   };

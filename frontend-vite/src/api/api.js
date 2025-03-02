@@ -56,10 +56,10 @@ export const addGymWithManager = async (gymData) => {
     
     // Log all form data keys for debugging
     for (let [key, value] of gymData.entries()) {
-      // Mask sensitive information
+      // Mask sensitive information and handle file logging
       console.log(`FormData Key: ${key}, Value Type: ${typeof value}, Value: ${
         key === 'managerPassword' ? '********' : 
-        (value instanceof File ? value.name : value)
+        (value instanceof File ? `File: ${value.name}, Size: ${value.size}, Type: ${value.type}` : value)
       }`);
     }
 
