@@ -45,11 +45,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(error => {
-    console.error('❌ MongoDB connection error:', error);
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('MongoDB connection error:', error);
     process.exit(1);
   });
 
@@ -65,6 +67,11 @@ app.use('/api/auth-web', authWebRoutes); // Web app authentication
 // Gym Routes (For AddGymForm)
 app.use('/api/web', gymRoutes);
 
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', message: 'Server is running' });
+});
+
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ 
@@ -73,26 +80,12 @@ app.use((req, res) => {
   });
 });
 
-// Global Error Handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
-  console.error('Stack:', err.stack);
-  
-  // Clean up any uploaded files if there's an error
-  if (req.file) {
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log('Cleaned up uploaded file after error');
-    } catch (unlinkError) {
-      console.error('Error cleaning up file:', unlinkError);
-    }
-  }
-  
-  res.status(500).json({ 
-    success: false, 
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!'
   });
 });
 
