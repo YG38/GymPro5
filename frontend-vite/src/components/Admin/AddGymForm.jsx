@@ -1,32 +1,73 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Upload, message } from 'antd';
+import { Form, Input, Button, Upload, message, Select } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { addGymWithManager } from "../../api/api";
+
+const { Option } = Select;
 
 const AddGymForm = ({ onAddGym }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
 
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validatePassword = (password) => {
+    // At least 8 characters, one uppercase, one lowercase, one number
+    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    return re.test(password);
+  };
+
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // Validate required fields
-      if (!values.gymName || !values.location || !values.price || 
-          !values.managerName || !values.managerEmail || !values.managerPassword) {
-        throw new Error('Please fill in all required fields');
+      // Comprehensive validation
+      const errors = {};
+
+      // Gym Name validation
+      if (!values.gymName || values.gymName.trim().length < 2) {
+        errors.gymName = 'Gym name must be at least 2 characters long';
       }
 
-      // Validate price is a valid number
-      const price = values.price;
-      if (!/^[0-9]+(\.[0-9]{1,2})?$/.test(price)) {
-        throw new Error('Price must be a valid number without symbols or letters');
+      // Location validation
+      if (!values.location || values.location.trim().length < 5) {
+        errors.location = 'Location must be at least 5 characters long';
+      }
+
+      // Price validation
+      const price = parseFloat(values.price);
+      if (isNaN(price) || price <= 0) {
+        errors.price = 'Price must be a positive number';
+      }
+
+      // Manager Name validation
+      if (!values.managerName || values.managerName.trim().length < 2) {
+        errors.managerName = 'Manager name must be at least 2 characters long';
+      }
+
+      // Email validation
+      if (!values.managerEmail || !validateEmail(values.managerEmail)) {
+        errors.managerEmail = 'Please enter a valid email address';
+      }
+
+      // Password validation
+      if (!values.managerPassword || !validatePassword(values.managerPassword)) {
+        errors.managerPassword = 'Password must be at least 8 characters, with uppercase, lowercase, and number';
+      }
+
+      // If any errors, throw validation error
+      if (Object.keys(errors).length > 0) {
+        const errorMessages = Object.values(errors).join(', ');
+        throw new Error(`Validation failed: ${errorMessages}`);
       }
 
       const formData = new FormData();
       formData.append('gymName', values.gymName.trim());
       formData.append('location', values.location.trim());
-      formData.append('price', price);
+      formData.append('price', price.toString());
       formData.append('managerName', values.managerName.trim());
       formData.append('managerEmail', values.managerEmail.trim().toLowerCase());
       formData.append('managerPassword', values.managerPassword);
@@ -35,7 +76,7 @@ const AddGymForm = ({ onAddGym }) => {
         formData.append('logo', fileList[0].originFileObj);
       }
 
-      // Detailed logging of form data before submission
+      // Detailed logging
       console.log('Submitting gym form with values:', {
         gymName: values.gymName,
         location: values.location,
@@ -60,36 +101,27 @@ const AddGymForm = ({ onAddGym }) => {
     } catch (error) {
       console.error('Full error object:', error);
       
-      // Detailed error logging
+      // Detailed error logging and user feedback
       if (error.response) {
-        // The request was made and the server responded with a status code
         console.error('Server responded with error:', {
           status: error.response.status,
           data: error.response.data,
           headers: error.response.headers
         });
         
-        // More specific error handling based on server response
+        // More specific error handling
         if (error.response.data.missingFields) {
           message.error(`Missing fields: ${error.response.data.missingFields.join(', ')}`);
         } else if (error.response.data.error) {
           message.error(error.response.data.error);
         }
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('No response received:', error.request);
         message.error('No response received from the server. Please check your network connection.');
       } else {
-        // Something happened in setting up the request
         console.error('Error setting up request:', error.message);
+        message.error(error.message);
       }
-      
-      // Fallback error message
-      message.error(
-        error.response?.data?.error || 
-        error.message || 
-        'Failed to add gym. Please check your input and try again.'
-      );
     } finally {
       setLoading(false);
     }
@@ -188,10 +220,10 @@ const AddGymForm = ({ onAddGym }) => {
         name="managerPassword"
         rules={[
           { required: true, message: 'Please input the manager password!' },
-          { min: 6, message: 'Password must be at least 6 characters!' },
+          { min: 8, message: 'Password must be at least 8 characters!' },
           { 
-            pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
-            message: 'Password must contain at least one letter and one number!'
+            pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/,
+            message: 'Password must contain uppercase, lowercase, and number!'
           }
         ]}
       >
