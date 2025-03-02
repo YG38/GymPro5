@@ -1,100 +1,114 @@
 // WorkoutPlanForm.js
 
 import React, { useState } from "react";
+import { Form, Input, InputNumber, Button, Space, Typography, Row, Col } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { addWorkoutPlan } from "../../api/api";
 
-const WorkoutPlanForm = ({ trainerId, onAddWorkout }) => {
-  const [planData, setPlanData] = useState({
-    name: "",
-    description: "",
-    duration: "",
-    category: "", // Category field
-    exercises: [{ name: "", sets: 0, reps: 0 }], // Initial exercise array
-  });
+const { TextArea } = Input;
+const { Title } = Typography;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const WorkoutPlanForm = ({ trainerId, onAddWorkout, selectedCategory }) => {
+  const [form] = Form.useForm();
+
+  const onFinish = async (values) => {
     try {
-      const response = await addWorkoutPlan(trainerId, planData);
+      const formattedData = {
+        ...values,
+        category: selectedCategory,
+        exercises: values.exercises || []
+      };
+      const response = await addWorkoutPlan(trainerId, formattedData);
       onAddWorkout(response.data);
-      setPlanData({
-        name: "",
-        description: "",
-        duration: "",
-        category: "",
-        exercises: [{ name: "", sets: 0, reps: 0 }],
-      });
+      form.resetFields();
     } catch (error) {
       console.error("Failed to add workout plan:", error);
     }
   };
 
-  const handleExerciseChange = (index, field, value) => {
-    const newExercises = [...planData.exercises];
-    newExercises[index][field] = value;
-    setPlanData({ ...planData, exercises: newExercises });
-  };
-
-  const addExercise = () => {
-    setPlanData({
-      ...planData,
-      exercises: [...planData.exercises, { name: "", sets: 0, reps: 0 }],
-    });
-  };
-
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Plan Name"
-        value={planData.name}
-        onChange={(e) => setPlanData({ ...planData, name: e.target.value })}
-      />
-      <textarea
-        placeholder="Description"
-        value={planData.description}
-        onChange={(e) => setPlanData({ ...planData, description: e.target.value })}
-      />
-      <input
-        type="number"
-        placeholder="Duration (weeks)"
-        value={planData.duration}
-        onChange={(e) => setPlanData({ ...planData, duration: e.target.value })}
-      />
-      <select
-        value={planData.category}
-        onChange={(e) => setPlanData({ ...planData, category: e.target.value })}
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={onFinish}
+      initialValues={{
+        exercises: [{ name: "", sets: 1, reps: 1 }]
+      }}
+    >
+      <Row gutter={16}>
+        <Col xs={24} sm={12}>
+          <Form.Item
+            name="name"
+            label="Plan Name"
+            rules={[{ required: true, message: 'Please enter plan name' }]}
+          >
+            <Input placeholder="Enter workout plan name" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item
+            name="duration"
+            label="Duration (weeks)"
+            rules={[{ required: true, message: 'Please enter duration' }]}
+          >
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="Enter duration in weeks" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item
+        name="description"
+        label="Description"
+        rules={[{ required: true, message: 'Please enter description' }]}
       >
-        <option value="">Select Category</option>
-        <option value="Strength">Strength</option>
-        <option value="Cardio">Cardio</option>
-        <option value="Flexibility">Flexibility</option>
-      </select>
-      {planData.exercises.map((exercise, index) => (
-        <div key={index}>
-          <input
-            type="text"
-            placeholder="Exercise Name"
-            value={exercise.name}
-            onChange={(e) => handleExerciseChange(index, "name", e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="Sets"
-            value={exercise.sets}
-            onChange={(e) => handleExerciseChange(index, "sets", e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="Reps"
-            value={exercise.reps}
-            onChange={(e) => handleExerciseChange(index, "reps", e.target.value)}
-          />
-        </div>
-      ))}
-      <button type="button" onClick={addExercise}>Add Exercise</button>
-      <button type="submit">Add Workout Plan</button>
-    </form>
+        <TextArea rows={4} placeholder="Enter workout plan description" />
+      </Form.Item>
+
+      <Title level={5}>Exercises</Title>
+      <Form.List name="exercises">
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name, ...restField }) => (
+              <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                <Form.Item
+                  {...restField}
+                  name={[name, 'name']}
+                  rules={[{ required: true, message: 'Missing exercise name' }]}
+                >
+                  <Input placeholder="Exercise name" />
+                </Form.Item>
+                <Form.Item
+                  {...restField}
+                  name={[name, 'sets']}
+                  rules={[{ required: true, message: 'Missing sets' }]}
+                >
+                  <InputNumber min={1} placeholder="Sets" />
+                </Form.Item>
+                <Form.Item
+                  {...restField}
+                  name={[name, 'reps']}
+                  rules={[{ required: true, message: 'Missing reps' }]}
+                >
+                  <InputNumber min={1} placeholder="Reps" />
+                </Form.Item>
+                <DeleteOutlined onClick={() => remove(name)} />
+              </Space>
+            ))}
+            <Form.Item>
+              <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                Add Exercise
+              </Button>
+            </Form.Item>
+          </>
+        )}
+      </Form.List>
+
+      <Form.Item>
+        <Button type="primary" htmlType="submit">
+          Create Workout Plan
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 

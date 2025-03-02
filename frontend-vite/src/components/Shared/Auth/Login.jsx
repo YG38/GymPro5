@@ -83,6 +83,9 @@ const Login = () => {
         case 'manager':
           navigate('/manager/dashboard');
           break;
+        case 'trainer':
+          navigate('/trainer/dashboard');
+          break;
         default:
           setErrorMessage('Invalid user role');
       }
