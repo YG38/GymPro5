@@ -12,16 +12,17 @@ const router = express.Router();
 const isVercel = process.env.VERCEL === '1';
 
 // AWS S3 Configuration
-const s3 = new AWS.S3({
+const s3Config = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
+  region: process.env.AWS_REGION
+};
 
-// Configure storage based on environment
 let upload;
+
 if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
   // Use S3 in production (Vercel)
+  const s3 = new AWS.S3(s3Config);
   upload = multer({
     storage: multerS3({
       s3: s3,
@@ -29,12 +30,17 @@ if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
       acl: 'public-read',
       key: (req, file, cb) => {
         cb(null, `gym_logos/${Date.now()}-${file.originalname}`);
-      },
+      }
     })
   });
 } else {
-  // For local development, just store in memory
-  upload = multer({ storage: multer.memoryStorage() });
+  // For local development, use memory storage
+  upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+  });
 }
 
 // Upload Gym Logo API Endpoint
@@ -47,22 +53,39 @@ router.post('/upload-logo', upload.single('logo'), async (req, res) => {
       });
     }
 
-    // In Vercel or when S3 is configured, use S3 URL
+    let fileUrl;
+
     if (isVercel || process.env.AWS_ACCESS_KEY_ID) {
-      return res.json({
-        success: true,
-        message: 'File uploaded successfully',
-        fileUrl: req.file.location,
-      });
+      // If using S3, get the URL from S3 response
+      fileUrl = req.file.location;
+    } else {
+      // For local development, store in memory and return a temporary URL
+      const filename = `${Date.now()}-${req.file.originalname}`;
+      fileUrl = `${req.protocol}://${req.get('host')}/temp/${filename}`;
+      
+      // In development, you might want to save the file locally
+      if (!isVercel) {
+        const fs = await import('fs');
+        const path = await import('path');
+        const uploadsDir = path.join(process.cwd(), 'uploads', 'gym_logos');
+        
+        try {
+          await fs.promises.mkdir(uploadsDir, { recursive: true });
+          await fs.promises.writeFile(
+            path.join(uploadsDir, filename),
+            req.file.buffer
+          );
+        } catch (err) {
+          console.error('Local file save error:', err);
+          // Continue anyway since this is just for development
+        }
+      }
     }
 
-    // For local development only
-    const fileUrl = `${req.protocol}://${req.get('host')}/temp/${Date.now()}-${req.file.originalname}`;
-    
     res.json({
       success: true,
-      message: 'File uploaded successfully (local development)',
-      fileUrl: fileUrl,
+      message: 'File uploaded successfully',
+      fileUrl
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -159,41 +182,6 @@ router.get('/gyms', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch gyms' 
-    });
-  }
-});
-
-// Submit Feedback Route
-router.post('/feedback', async (req, res) => {
-  try {
-    const { userId, gymId, rating, comment } = req.body;
-
-    if (!userId || !gymId || !rating) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
-
-    // Validate rating is between 1 and 5
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rating must be between 1 and 5'
-      });
-    }
-
-    // Here you would typically save the feedback to your database
-    // For now, we'll just return a success response
-    res.json({
-      success: true,
-      message: 'Feedback submitted successfully'
-    });
-  } catch (error) {
-    console.error('Error submitting feedback:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit feedback'
     });
   }
 });
