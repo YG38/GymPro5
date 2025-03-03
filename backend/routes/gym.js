@@ -384,43 +384,113 @@ router.put("/manager/logo/:gymId", upload.single("logo"), handleMulterError, asy
   }
 });
 
-// Get all managers
+// Get all managers (limited information)
 router.get("/managers", async (req, res) => {
   try {
     console.log('🔍 DIAGNOSTIC: Manager Fetch Request');
-    console.log('MongoDB Connection State:', mongoose.connection.readyState);
-
-    // Fetch managers with detailed logging
-    const managers = await WebUser.find({ role: 'manager' }).select('-password');
+    
+    // Fetch managers with minimal details
+    const managers = await WebUser.find({ role: 'manager' }).select('name email');
     
     console.log('👥 Manager Fetch Results:', {
-      totalManagers: managers.length,
-      managerDetails: managers.map(manager => ({
-        id: manager._id,
-        name: manager.name,
-        email: manager.email
-      }))
+      totalManagers: managers.length
     });
 
     res.json({
-      data: managers,
+      data: managers.map(manager => ({
+        id: manager._id,
+        name: manager.name,
+        email: manager.email.replace(/(?<=.{2}).(?=[^@]*@)/g, '*')  // Partially hide email
+      })),
       total: managers.length,
-      success: true,
-      diagnostic: {
-        mongoConnectionState: mongoose.connection.readyState,
-        managerCount: managers.length
-      }
+      success: true
     });
   } catch (error) {
-    console.error('❌ CRITICAL Manager Fetch Error:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack
-    });
+    console.error('❌ CRITICAL Manager Fetch Error:', error);
     res.status(500).json({ 
-      error: "Catastrophic error fetching managers", 
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: "Error fetching managers", 
       success: false
+    });
+  }
+});
+
+// Delete a manager
+router.delete("/managers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find and delete the manager
+    const deletedManager = await WebUser.findByIdAndDelete(id);
+    
+    if (!deletedManager) {
+      return res.status(404).json({ 
+        error: "Manager not found", 
+        success: false 
+      });
+    }
+
+    // Optional: Also delete associated gym if exists
+    await Gym.findOneAndDelete({ 'manager.userId': id });
+
+    res.json({
+      message: "Manager deleted successfully",
+      success: true
+    });
+  } catch (error) {
+    console.error('❌ Error Deleting Manager:', error);
+    res.status(500).json({ 
+      error: "Error deleting manager", 
+      success: false 
+    });
+  }
+});
+
+// Get all trainees
+router.get("/trainees", async (req, res) => {
+  try {
+    const trainees = await WebUser.find({ role: 'trainee' }).select('name email');
+    
+    res.json({
+      data: trainees.map(trainee => ({
+        id: trainee._id,
+        name: trainee.name,
+        email: trainee.email.replace(/(?<=.{2}).(?=[^@]*@)/g, '*')
+      })),
+      total: trainees.length,
+      success: true
+    });
+  } catch (error) {
+    console.error('❌ Error Fetching Trainees:', error);
+    res.status(500).json({ 
+      error: "Error fetching trainees", 
+      success: false 
+    });
+  }
+});
+
+// Delete a trainee
+router.delete("/trainees/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const deletedTrainee = await WebUser.findByIdAndDelete(id);
+    
+    if (!deletedTrainee) {
+      return res.status(404).json({ 
+        error: "Trainee not found", 
+        success: false 
+      });
+    }
+
+    res.json({
+      message: "Trainee deleted successfully",
+      success: true
+    });
+  } catch (error) {
+    console.error('❌ Error Deleting Trainee:', error);
+    res.status(500).json({ 
+      error: "Error deleting trainee", 
+      success: false 
     });
   }
 });

@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Card, Button, Typography, Spin, Statistic, Row, Col } from 'antd';
-import { LogoutOutlined, UserOutlined, BankOutlined, TeamOutlined } from '@ant-design/icons';
+import { Layout, Card, Button, Typography, Spin, Statistic, Row, Col, message, Popconfirm } from 'antd';
+import { 
+  LogoutOutlined, 
+  UserOutlined, 
+  BankOutlined, 
+  TeamOutlined, 
+  DeleteOutlined 
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AddGymForm from './AddGymForm';
-import { fetchGyms, fetchManagers } from '../../api/api';
+import { 
+  fetchGyms, 
+  fetchManagers, 
+  fetchTrainees, 
+  deleteManager, 
+  deleteTrainee,
+  fetchRegisteredUsers
+} from '../../api/api';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
-// GymPro brand colors
 const colors = {
   primary: '#1890ff',
   secondary: '#52c41a',
@@ -21,6 +33,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [gyms, setGyms] = useState([]);
   const [managers, setManagers] = useState([]);
+  const [trainees, setTrainees] = useState([]);
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -30,53 +43,53 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [gymsResponse, managersResponse] = await Promise.all([
+      const [gymsResponse, managersResponse, traineesResponse] = await Promise.all([
         fetchGyms(),
-        fetchManagers()
+        fetchManagers(),
+        fetchTrainees()
       ]);
       
-      console.log('🔍 Dashboard Data Fetch:', {
-        gymsResponseType: typeof gymsResponse,
-        gymsData: gymsResponse,
-        managersResponseType: typeof managersResponse,
-        managersData: managersResponse
-      });
-
-      // Ensure we're accessing the correct property
-      const gyms = gymsResponse.data || gymsResponse || [];
-      const managers = managersResponse.data || managersResponse || [];
-      
-      console.log('🏋️ Processed Data:', {
-        gymCount: gyms.length,
-        managerCount: managers.length
-      });
-
-      setGyms(gyms);
-      setManagers(managers);
+      setGyms(gymsResponse.data || []);
+      setManagers(managersResponse.data || []);
+      setTrainees(traineesResponse.data || []);
     } catch (error) {
-      console.group('❌ Dashboard Data Loading Error');
-      console.error('Full Error:', error);
-      console.groupEnd();
+      console.error('Error loading dashboard data:', error);
+      message.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteManager = async (managerId) => {
+    try {
+      await deleteManager(managerId);
+      setManagers(managers.filter(m => m.id !== managerId));
+      message.success('Manager deleted successfully');
+    } catch (error) {
+      console.error('Error deleting manager:', error);
+      message.error('Failed to delete manager');
+    }
+  };
+
+  const handleDeleteTrainee = async (traineeId) => {
+    try {
+      await deleteTrainee(traineeId);
+      setTrainees(trainees.filter(t => t.id !== traineeId));
+      message.success('Trainee deleted successfully');
+    } catch (error) {
+      console.error('Error deleting trainee:', error);
+      message.error('Failed to delete trainee');
     }
   };
 
   const handleLogout = () => {
     try {
       logout();
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
       sessionStorage.clear();
       navigate('/login', { replace: true });
-    }
-  };
-
-  const handleGymAdded = (newGym) => {
-    setGyms(prev => [...prev, newGym]);
-    // If the gym comes with a manager, update managers list
-    if (newGym.manager) {
-      setManagers(prev => [...prev, newGym.manager]);
     }
   };
 
@@ -104,17 +117,14 @@ const AdminDashboard = () => {
         alignItems: 'center',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Title level={3} style={{ color: 'white', margin: 0 }}>
-            GymPro Admin Dashboard
-          </Title>
-        </div>
+        <Title level={3} style={{ color: 'white', margin: 0 }}>
+          GymPro Admin Dashboard
+        </Title>
         <Button 
           type="primary" 
           danger 
           icon={<LogoutOutlined />}
           onClick={handleLogout}
-          style={{ marginLeft: '16px' }}
         >
           Logout
         </Button>
@@ -122,79 +132,143 @@ const AdminDashboard = () => {
 
       <Content style={{ padding: '24px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <Card style={{ marginBottom: '24px' }}>
-            <Row gutter={[24, 24]}>
-              <Col xs={24} sm={12} md={8}>
-                <Statistic
-                  title="Total Gyms"
-                  value={gyms.length}
-                  prefix={<BankOutlined />}
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Statistic
-                  title="Total Managers"
-                  value={managers.length}
-                  prefix={<TeamOutlined />}
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Statistic
-                  title="System Status"
-                  value="Active"
-                  valueStyle={{ color: colors.secondary }}
-                />
-              </Col>
-            </Row>
-          </Card>
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8}>
+              <Statistic
+                title="Total Gyms"
+                value={gyms.length}
+                prefix={<BankOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Statistic
+                title="Total Managers"
+                value={managers.length}
+                prefix={<TeamOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Statistic
+                title="Total Trainees"
+                value={trainees.length}
+                prefix={<UserOutlined />}
+              />
+            </Col>
+          </Row>
 
-          <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-            <Card title={<><BankOutlined /> Add New Gym</>}>
-              <AddGymForm onGymAdded={handleGymAdded} />
-            </Card>
-
-            <Card 
-              title={<><BankOutlined /> GymPro Locations</>}
-              extra={<Text type="secondary">{gyms.length} gyms</Text>}
-            >
-              {gyms.length > 0 ? (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {gyms.map(gym => (
-                    <li key={gym._id} style={{ 
+          <Row gutter={[24, 24]}>
+            {/* Gyms Card */}
+            <Col xs={24} md={8}>
+              <Card 
+                title={<><BankOutlined /> GymPro Locations</>}
+                extra={<Text type="secondary">{gyms.length} gyms</Text>}
+              >
+                {gyms.map(gym => (
+                  <div 
+                    key={gym.id} 
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
                       padding: '8px 0',
                       borderBottom: '1px solid #f0f0f0'
-                    }}>
+                    }}
+                  >
+                    <span>
                       <BankOutlined style={{ marginRight: '8px' }} />
-                      {gym.name} - {gym.location}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <Text type="secondary">No gyms registered yet</Text>
-              )}
-            </Card>
+                      {gym.gymName} - {gym.location}
+                    </span>
+                  </div>
+                ))}
+              </Card>
+            </Col>
 
-            <Card 
-              title={<><TeamOutlined /> GymPro Managers</>}
-              extra={<Text type="secondary">{managers.length} managers</Text>}
-            >
-              {managers.length > 0 ? (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {managers.map(manager => (
-                    <li key={manager._id} style={{ 
+            {/* Managers Card */}
+            <Col xs={24} md={8}>
+              <Card 
+                title={<><TeamOutlined /> Managers</>}
+                extra={<Text type="secondary">{managers.length} managers</Text>}
+              >
+                {managers.map(manager => (
+                  <div 
+                    key={manager.id} 
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
                       padding: '8px 0',
                       borderBottom: '1px solid #f0f0f0'
-                    }}>
+                    }}
+                  >
+                    <span>
                       <UserOutlined style={{ marginRight: '8px' }} />
                       {manager.name} - {manager.email}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <Text type="secondary">No managers registered yet</Text>
-              )}
-            </Card>
-          </div>
+                    </span>
+                    <Popconfirm
+                      title="Are you sure to delete this manager?"
+                      onConfirm={() => handleDeleteManager(manager.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        size="small" 
+                      />
+                    </Popconfirm>
+                  </div>
+                ))}
+              </Card>
+            </Col>
+
+            {/* Trainees Card */}
+            <Col xs={24} md={8}>
+              <Card 
+                title={<><UserOutlined /> Trainees</>}
+                extra={<Text type="secondary">{trainees.length} trainees</Text>}
+              >
+                {trainees.map(trainee => (
+                  <div 
+                    key={trainee.id} 
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '8px 0',
+                      borderBottom: '1px solid #f0f0f0'
+                    }}
+                  >
+                    <span>
+                      <UserOutlined style={{ marginRight: '8px' }} />
+                      {trainee.name} - {trainee.email}
+                    </span>
+                    <Popconfirm
+                      title="Are you sure to delete this trainee?"
+                      onConfirm={() => handleDeleteTrainee(trainee.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        size="small" 
+                      />
+                    </Popconfirm>
+                  </div>
+                ))}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Add Gym Form */}
+          <Card 
+            title={<><BankOutlined /> Add New Gym</>} 
+            style={{ marginTop: '24px' }}
+          >
+            <AddGymForm onAddGym={(newGym) => setGyms([...gyms, newGym])} />
+          </Card>
         </div>
       </Content>
     </Layout>

@@ -242,9 +242,11 @@ export const register = async (userData) => {
 // 📦 Data Fetching
 export const fetchTrainees = async () => {
   try {
-    const response = await API.get("/api/trainees");
+    const response = await API.get("/api/gyms/trainees");
+    console.log('🏃 Trainees Fetch Response:', response.data);
     return response.data;
   } catch (error) {
+    console.error('❌ Error Fetching Trainees:', error);
     throw error;
   }
 };
@@ -291,9 +293,10 @@ export const deleteTrainer = async (trainerId) => {
 
 export const deleteTrainee = async (traineeId) => {
   try {
-    const response = await API.delete(`/api/trainees/${traineeId}`);
+    const response = await API.delete(`/api/gyms/trainees/${traineeId}`);
     return response.data;
   } catch (error) {
+    console.error('❌ Error Deleting Trainee:', error);
     throw error;
   }
 };
@@ -307,10 +310,32 @@ export const deleteWorkoutPlan = async (planId) => {
   }
 };
 
+export const deleteManager = async (managerId) => {
+  try {
+    const response = await API.delete(`/api/gyms/managers/${managerId}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error Deleting Manager:', error);
+    throw error;
+  }
+};
+
 // 🚪 Logout
 export const logout = (navigate) => {
   localStorage.removeItem("token");
   if (navigate) navigate("/login");
+};
+
+// Fetch All Registered Users
+export const fetchRegisteredUsers = async () => {
+  try {
+    const response = await API.get("/api/auth/users");
+    console.log('👥 Registered Users Fetch Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error Fetching Registered Users:', error);
+    throw error;
+  }
 };
 
 export default API;

@@ -153,4 +153,46 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get all registered users (Admin only)
+router.get("/users", async (req, res) => {
+  try {
+    // Fetch all users, excluding sensitive information
+    const users = await WebUser.find({}).select('-password');
+    
+    console.log('👥 User Fetch Results:', {
+      totalUsers: users.length,
+      userDetails: users.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email.replace(/(?<=.{2}).(?=[^@]*@)/g, '*'),
+        role: user.role,
+        registeredAt: user.createdAt
+      }))
+    });
+
+    res.json({
+      data: users.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email.replace(/(?<=.{2}).(?=[^@]*@)/g, '*'),
+        role: user.role,
+        registeredAt: user.createdAt
+      })),
+      total: users.length,
+      success: true
+    });
+  } catch (error) {
+    console.error('❌ CRITICAL Users Fetch Error:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
+    res.status(500).json({ 
+      error: "Error fetching users", 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      success: false
+    });
+  }
+});
+
 export default router;
