@@ -5,6 +5,7 @@ import Gym from "../models/Gym.js";
 import WebUser from "../models/WebUser.js"; // Import WebUser instead of User
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose'; // Import mongoose
 
 const router = express.Router();
 
@@ -190,18 +191,53 @@ router.post('/trainer', async (req, res) => {
 // Get all gyms
 router.get("/gym", async (req, res) => {
   try {
-    console.log('Fetching all gyms...');
+    console.log('🔍 DIAGNOSTIC: Gym Fetch Request');
+    console.log('MongoDB Connection State:', mongoose.connection.readyState);
+    
+    // Comprehensive database check
+    const dbStats = await mongoose.connection.db.stats();
+    console.log('Database Stats:', {
+      collections: Object.keys(dbStats.collections || {}),
+      objects: dbStats.objects,
+      storageSize: dbStats.storageSize
+    });
+
+    // Check Gym collection directly
+    const gymCollection = mongoose.connection.db.collection('gyms');
+    const gymCount = await gymCollection.countDocuments();
+    console.log('Total Gym Documents:', gymCount);
+
+    // Fetch all gym documents with detailed logging
     const gyms = await Gym.find({}).select('-manager.password');
-    console.log(`Found ${gyms.length} gyms`);
+    
+    console.log('🏋️ Gym Fetch Results:', {
+      totalGyms: gyms.length,
+      gymDetails: gyms.map(gym => ({
+        id: gym._id,
+        name: gym.gymName,
+        location: gym.location,
+        price: gym.price
+      }))
+    });
+
     res.json({
       data: gyms,
       total: gyms.length,
-      success: true
+      success: true,
+      diagnostic: {
+        mongoConnectionState: mongoose.connection.readyState,
+        gymCount: gymCount
+      }
     });
   } catch (error) {
-    console.error('Error fetching gyms:', error);
+    console.error('❌ CRITICAL Gym Fetch Error:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
     res.status(500).json({ 
-      error: "Error fetching gyms",
+      error: "Catastrophic error fetching gyms", 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       success: false
     });
   }

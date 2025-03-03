@@ -34,12 +34,29 @@ const AdminDashboard = () => {
         fetchGyms(),
         fetchManagers()
       ]);
-      console.log('Gyms response:', gymsResponse);
-      console.log('Managers response:', managersResponse);
-      setGyms(gymsResponse.data || []);
-      setManagers(managersResponse.data || []);
+      
+      console.log('🔍 Dashboard Data Fetch:', {
+        gymsResponseType: typeof gymsResponse,
+        gymsData: gymsResponse,
+        managersResponseType: typeof managersResponse,
+        managersData: managersResponse
+      });
+
+      // Ensure we're accessing the correct property
+      const gyms = gymsResponse.data || gymsResponse || [];
+      const managers = managersResponse.data || managersResponse || [];
+      
+      console.log('🏋️ Processed Data:', {
+        gymCount: gyms.length,
+        managerCount: managers.length
+      });
+
+      setGyms(gyms);
+      setManagers(managers);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.group('❌ Dashboard Data Loading Error');
+      console.error('Full Error:', error);
+      console.groupEnd();
     } finally {
       setLoading(false);
     }

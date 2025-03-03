@@ -138,11 +138,24 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
+    console.log('🏋️ FETCHING GYMS - START');
+    console.log('Fetch Timestamp:', new Date().toISOString());
+    
     const response = await API.get("/api/gyms/gym");
-    console.log('Fetched gyms:', response);
-    return response;
+    
+    console.log('🏋️ FETCH GYMS RESPONSE:', {
+      status: response.status,
+      data: response.data,
+      totalGyms: response.data?.data?.length || 0
+    });
+    
+    return response.data;
   } catch (error) {
-    console.error('Error fetching gyms:', error);
+    console.group('❌ Error Fetching Gyms');
+    console.error('Full Error Object:', error);
+    console.error('Error Response:', error.response ? error.response.data : 'No response');
+    console.groupEnd();
+    
     throw error;
   }
 };
