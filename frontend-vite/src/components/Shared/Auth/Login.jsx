@@ -19,6 +19,11 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
+      console.log('Login attempt with values:', { 
+        email: values.email,
+        role: values.role
+      });
+
       // Hardcoded admin authentication
       if (
         values.email === ADMIN_EMAIL && 
@@ -46,7 +51,12 @@ const Login = () => {
 
       // Normal login for non-admin users through API
       const response = await apiLogin(values);
+      console.log('Login response:', response);
       
+      if (!response.success) {
+        throw new Error(response.message || 'Login failed');
+      }
+
       const { token, user, gym } = response;
       
       const userData = { 
@@ -55,6 +65,8 @@ const Login = () => {
         email: user.email,
         gym 
       };
+
+      console.log('Storing user data:', userData);
 
       // Store in session storage
       sessionStorage.setItem('authToken', token);
@@ -82,6 +94,7 @@ const Login = () => {
           message.error('Invalid user role');
       }
     } catch (error) {
+      console.error('Login error:', error);
       message.error(error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

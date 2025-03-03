@@ -47,7 +47,7 @@ try {
 
 // CORS Configuration
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://gym-pro5.vercel.app', 'http://gym-pro5.vercel.app'],
+  origin: ['http://localhost:5173', 'https://gym-pro5.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -72,37 +72,51 @@ app.use((req, res, next) => {
   next();
 });
 
-// MongoDB Connection with retries
-const connectWithRetry = () => {
-  const options = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-  };
+// Updated MongoDB connection configuration
+const mongooseOptions = {
+  serverSelectionTimeoutMS: 5000,  // 5 seconds for server selection
+  socketTimeoutMS: 45000,          // 45 seconds for socket operations
+  retryWrites: true                // Enable retryable writes
+};
 
-  mongoose.connect(process.env.MONGODB_URI, options)
+const connectWithRetry = () => {
+  mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
     .then(() => {
       console.log('✅ Connected to MongoDB');
+      // Verify connection status
+      console.log('Connection readyState:', mongoose.connection.readyState);
     })
     .catch(err => {
-      console.error('❌ MongoDB connection error:', err);
+      console.error('❌ MongoDB connection error:', err.message);
       console.log('Retrying in 5 seconds...');
       setTimeout(connectWithRetry, 5000);
     });
 };
 
-connectWithRetry();
-
-// Handle MongoDB connection events
-mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB Error:', err);
+// Configure Mongoose connection events
+mongoose.connection.on('connected', () => {
+  console.log('📢 MongoDB Connection Established');
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB Disconnected! Attempting to reconnect...');
-  mongoose.connect(process.env.MONGODB_URI);
+  console.log('⚠️ MongoDB Disconnected!');
+  // Mongoose will automatically attempt to reconnect
 });
+
+mongoose.connection.on('reconnected', () => {
+  console.log('♻️ MongoDB Reconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB Connection Error:', err.message);
+});
+
+// Configure Mongoose defaults
+mongoose.set('strictQuery', true);  // Recommended for future compatibility
+mongoose.set('bufferCommands', false); // Disable command buffering
+
+// Start initial connection
+connectWithRetry();
 
 // Root Route
 app.get('/', (req, res) => {

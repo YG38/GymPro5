@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import WebUser from '../models/WebUser.js';
+import Gym from '../models/Gym.js';
 
 dotenv.config();
 
@@ -12,7 +13,11 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
-    console.log(`[WEB LOGIN] Attempt - Email: ${email}, Role: ${role}`);
+    console.log(`[WEB LOGIN] Login attempt:`, {
+      email,
+      role,
+      passwordLength: password?.length
+    });
 
     // Validate input
     if (!email || !password) {
@@ -47,52 +52,97 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Handle other users
+    // Find user and log the query details
+    console.log(`[WEB LOGIN] Searching for user with email: ${email} and role: ${role}`);
+    
     const user = await WebUser.findOne({ 
       email: email.trim().toLowerCase(), 
       role: role 
     });
 
+    console.log('[WEB LOGIN] User search result:', user ? {
+      found: true,
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role
+    } : 'No user found');
+
     if (!user) {
-      console.log(`[WEB LOGIN] No user found - Email: ${email}, Role: ${role}`);
       return res.status(401).json({ 
         success: false,
-        message: 'Invalid credentials' 
+        message: 'Invalid credentials or role mismatch' 
       });
     }
 
     // Validate password
     const validPassword = await bcrypt.compare(password, user.password);
+    console.log(`[WEB LOGIN] Password validation:`, { validPassword });
+    
     if (!validPassword) {
-      console.log(`[WEB LOGIN] Password mismatch - Email: ${email}`);
       return res.status(401).json({ 
         success: false,
         message: 'Invalid credentials' 
       });
     }
 
+    // For managers, fetch their associated gym
+    let gymData = null;
+    if (user.role === 'manager') {
+      console.log(`[WEB LOGIN] Fetching gym data for manager ID: ${user._id}`);
+      gymData = await Gym.findOne({ managerId: user._id });
+      console.log('[WEB LOGIN] Gym data found:', gymData ? true : false);
+      
+      if (!gymData) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'No associated gym found for this manager' 
+        });
+      }
+    }
+
     // Generate token
+    if (!process.env.JWT_SECRET) {
+      console.warn('JWT_SECRET is not set! Using fallback secret. This is not recommended for production.');
+    }
+    
+    const tokenPayload = { 
+      userId: user._id, 
+      role: user.role,
+      email: user.email
+    };
+
+    if (gymData) {
+      tokenPayload.gymId = gymData._id;
+    }
+
     const token = jwt.sign(
-      { 
-        userId: user._id, 
-        role: user.role,
-        email: user.email 
-      },
+      tokenPayload,
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: '24h' }
     );
 
-    console.log(`[WEB LOGIN] Successful - Email: ${email}, Role: ${user.role}`);
-    res.json({ 
+    console.log(`[WEB LOGIN] Login successful:`, {
+      userRole: user.role,
+      hasGymData: !!gymData
+    });
+
+    const response = { 
       success: true,
       token, 
-      role: user.role,
       user: {
         id: user._id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        role: user.role
       }
-    });
+    };
+
+    if (gymData) {
+      response.gym = gymData;
+    }
+
+    res.json(response);
+    
   } catch (error) {
     console.error('[WEB LOGIN] Server error:', error);
     res.status(500).json({ 

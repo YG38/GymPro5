@@ -1,12 +1,11 @@
 import mongoose from 'mongoose';
 
-// Define Gym schema
 const GymSchema = new mongoose.Schema({
   gymName: {
     type: String,
     required: [true, 'Gym name is required'],
     trim: true,
-    unique: true,
+    unique: true, // Single unique declaration
     minlength: [2, 'Gym name must be at least 2 characters long'],
     maxlength: [50, 'Gym name cannot exceed 50 characters']
   },
@@ -20,50 +19,32 @@ const GymSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative'],
-    validate: {
-      validator: function(v) {
-        return !isNaN(v) && v >= 0;
-      },
-      message: props => `${props.value} is not a valid price!`
-    }
+    min: [0, 'Price cannot be negative']
   },
   manager: {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'WebUser',
       required: true
     },
     name: {
       type: String,
-      required: [true, 'Manager name is required'],
-      trim: true,
-      minlength: [2, 'Manager name must be at least 2 characters long'],
-      maxlength: [50, 'Manager name cannot exceed 50 characters']
+      required: [true, 'Manager name is required']
     },
     email: {
       type: String,
       required: [true, 'Manager email is required'],
-      trim: true,
+      unique: true, // Single unique declaration
       lowercase: true,
-      unique: true,
       validate: {
-        validator: function(v) {
-          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-        },
+        validator: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
         message: props => `${props.value} is not a valid email address!`
       }
     }
   },
   logo: {
-    data: {
-      type: String,
-      required: false
-    },
-    contentType: {
-      type: String,
-      required: false
-    }
+    data: String,
+    contentType: String
   },
   isDeleted: {
     type: Boolean,
@@ -72,16 +53,13 @@ const GymSchema = new mongoose.Schema({
 }, {
   timestamps: true,
   toJSON: {
-    transform: function(doc, ret) {
+    transform: (doc, ret) => {
+      delete ret.__v;
       return ret;
     }
   }
 });
 
-// Add index for faster lookups
-GymSchema.index({ gymName: 1 }, { unique: true });
-GymSchema.index({ 'manager.email': 1 }, { unique: true });
-
-const Gym = mongoose.model('Gym', GymSchema);
-
+// Remove manual index declarations - field-level "unique: true" is sufficient
+const Gym = mongoose.models.Gym || mongoose.model('Gym', GymSchema);
 export default Gym;

@@ -181,7 +181,7 @@ export const addTrainer = async (gymId, trainerData) => {
 
 export const updatePrices = async (prices) => {
   try {
-    const response = await API.put("/manager/prices", prices);
+    const response = await API.put("/api/manager/prices", prices);
     return response.data;
   } catch (error) {
     throw error;
@@ -190,7 +190,7 @@ export const updatePrices = async (prices) => {
 
 export const updateLocation = async (location) => {
   try {
-    const response = await API.put("/manager/location", location);
+    const response = await API.put("/api/manager/location", location);
     return response.data;
   } catch (error) {
     throw error;
@@ -200,7 +200,7 @@ export const updateLocation = async (location) => {
 // 🏋️‍♂️ Trainer Endpoints
 export const addWorkoutPlan = async (planData) => {
   try {
-    const response = await API.post("/trainer/workouts", planData);
+    const response = await API.post("/api/trainer/workouts", planData);
     return response.data;
   } catch (error) {
     throw error;
@@ -210,7 +210,7 @@ export const addWorkoutPlan = async (planData) => {
 // 🔐 Authentication
 export const login = async (credentials) => {
   try {
-    const response = await API.post("/auth/login", credentials);
+    const response = await API.post("/api/auth-web/login", credentials);
     return response.data;
   } catch (error) {
     throw error;
@@ -219,7 +219,7 @@ export const login = async (credentials) => {
 
 export const register = async (userData) => {
   try {
-    const response = await API.post("/auth/register", userData);
+    const response = await API.post("/api/auth/register", userData);
     return response.data;
   } catch (error) {
     throw error;
@@ -229,7 +229,7 @@ export const register = async (userData) => {
 // 📦 Data Fetching
 export const fetchTrainees = async () => {
   try {
-    const response = await API.get("/trainees");
+    const response = await API.get("/api/trainees");
     return response.data;
   } catch (error) {
     throw error;
@@ -238,7 +238,7 @@ export const fetchTrainees = async () => {
 
 export const fetchTrainers = async (gymId) => {
   try {
-    const response = await API.get(`/trainer/${gymId}/trainers`);
+    const response = await API.get(`/api/trainer/${gymId}/trainers`);
     return response.data;
   } catch (error) {
     throw error;
@@ -247,7 +247,7 @@ export const fetchTrainers = async (gymId) => {
 
 export const fetchWorkoutPlansByGym = async (gymId) => {
   try {
-    const response = await API.get(`/gym/${gymId}/workout-plans`);
+    const response = await API.get(`/api/gym/${gymId}/workout-plans`);
     return response.data;
   } catch (error) {
     throw error;
@@ -269,7 +269,7 @@ export const fetchManagers = async () => {
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
-    const response = await API.delete(`/trainer/${trainerId}`);
+    const response = await API.delete(`/api/trainer/${trainerId}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -278,7 +278,7 @@ export const deleteTrainer = async (trainerId) => {
 
 export const deleteTrainee = async (traineeId) => {
   try {
-    const response = await API.delete(`/trainees/${traineeId}`);
+    const response = await API.delete(`/api/trainees/${traineeId}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -287,7 +287,7 @@ export const deleteTrainee = async (traineeId) => {
 
 export const deleteWorkoutPlan = async (planId) => {
   try {
-    const response = await API.delete(`/workouts/${planId}`);
+    const response = await API.delete(`/api/workouts/${planId}`);
     return response.data;
   } catch (error) {
     throw error;
