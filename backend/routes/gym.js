@@ -384,4 +384,45 @@ router.put("/manager/logo/:gymId", upload.single("logo"), handleMulterError, asy
   }
 });
 
+// Get all managers
+router.get("/managers", async (req, res) => {
+  try {
+    console.log('🔍 DIAGNOSTIC: Manager Fetch Request');
+    console.log('MongoDB Connection State:', mongoose.connection.readyState);
+
+    // Fetch managers with detailed logging
+    const managers = await WebUser.find({ role: 'manager' }).select('-password');
+    
+    console.log('👥 Manager Fetch Results:', {
+      totalManagers: managers.length,
+      managerDetails: managers.map(manager => ({
+        id: manager._id,
+        name: manager.name,
+        email: manager.email
+      }))
+    });
+
+    res.json({
+      data: managers,
+      total: managers.length,
+      success: true,
+      diagnostic: {
+        mongoConnectionState: mongoose.connection.readyState,
+        managerCount: managers.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ CRITICAL Manager Fetch Error:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
+    res.status(500).json({ 
+      error: "Catastrophic error fetching managers", 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      success: false
+    });
+  }
+});
+
 export default router;
