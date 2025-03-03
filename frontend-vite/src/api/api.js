@@ -138,7 +138,7 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/api/web/gym");
+    const response = await API.get("/api/gyms/gym");
     console.log('Fetched gyms:', response.data);
     return response.data;
   } catch (error) {
@@ -257,8 +257,7 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
 // 👥 Manager Fetching
 export const fetchManagers = async () => {
   try {
-    const response = await API.get("/api/web/managers");
-    console.log('Fetched managers:', response.data);
+    const response = await API.get("/api/gyms/managers");
     return response.data;
   } catch (error) {
     console.error('Error fetching managers:', error);
