@@ -34,6 +34,7 @@ const AdminDashboard = () => {
   const [gyms, setGyms] = useState([]);
   const [managers, setManagers] = useState([]);
   const [trainees, setTrainees] = useState([]);
+  const [registeredUsers, setRegisteredUsers] = useState([]);
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -43,18 +44,68 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [gymsResponse, managersResponse, traineesResponse] = await Promise.all([
+      console.log('🔍 Starting Dashboard Data Fetch');
+      
+      const responses = await Promise.all([
         fetchGyms(),
         fetchManagers(),
-        fetchTrainees()
+        fetchTrainees(),
+        fetchRegisteredUsers()
       ]);
-      
-      setGyms(gymsResponse.data || []);
-      setManagers(managersResponse.data || []);
-      setTrainees(traineesResponse.data || []);
+
+      console.log('🏋️ Raw Responses:', {
+        gyms: responses[0],
+        managers: responses[1],
+        trainees: responses[2],
+        registeredUsers: responses[3]
+      });
+
+      // Defensive parsing with fallbacks
+      const gyms = responses[0]?.data || responses[0] || [];
+      const managers = responses[1]?.data || responses[1] || [];
+      const trainees = responses[2]?.data || responses[2] || [];
+      const registeredUsers = responses[3]?.data || responses[3] || [];
+
+      console.log('📊 Processed Data:', {
+        gymCount: gyms.length,
+        managerCount: managers.length,
+        traineeCount: trainees.length,
+        registeredUsersCount: registeredUsers.length
+      });
+
+      // Ensure each item has a unique key
+      const processedGyms = gyms.map((gym, index) => ({
+        ...gym,
+        key: gym._id || gym.id || `gym-${index}`
+      }));
+
+      const processedManagers = managers.map((manager, index) => ({
+        ...manager,
+        key: manager._id || manager.id || `manager-${index}`
+      }));
+
+      const processedTrainees = trainees.map((trainee, index) => ({
+        ...trainee,
+        key: trainee._id || trainee.id || `trainee-${index}`
+      }));
+
+      const processedRegisteredUsers = registeredUsers.map((user, index) => ({
+        ...user,
+        key: user._id || user.id || `user-${index}`
+      }));
+
+      setGyms(processedGyms);
+      setManagers(processedManagers);
+      setTrainees(processedTrainees);
+      setRegisteredUsers(processedRegisteredUsers);
+
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      message.error('Failed to load dashboard data');
+      console.error('❌ CRITICAL Dashboard Data Loading Error:', {
+        errorName: error.name,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
+      message.error('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -154,18 +205,25 @@ const AdminDashboard = () => {
                 prefix={<UserOutlined />}
               />
             </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Statistic
+                title="Total Registered Users"
+                value={registeredUsers.length}
+                prefix={<UserOutlined />}
+              />
+            </Col>
           </Row>
 
           <Row gutter={[24, 24]}>
             {/* Gyms Card */}
             <Col xs={24} md={8}>
               <Card 
-                title={<><BankOutlined /> GymPro Locations</>}
+                title={<><BankOutlined /> GymPro Locations</>} 
                 extra={<Text type="secondary">{gyms.length} gyms</Text>}
               >
                 {gyms.map(gym => (
                   <div 
-                    key={gym.id} 
+                    key={gym.key} 
                     style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
@@ -186,12 +244,12 @@ const AdminDashboard = () => {
             {/* Managers Card */}
             <Col xs={24} md={8}>
               <Card 
-                title={<><TeamOutlined /> Managers</>}
+                title={<><TeamOutlined /> Managers</>} 
                 extra={<Text type="secondary">{managers.length} managers</Text>}
               >
                 {managers.map(manager => (
                   <div 
-                    key={manager.id} 
+                    key={manager.key} 
                     style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
@@ -225,12 +283,12 @@ const AdminDashboard = () => {
             {/* Trainees Card */}
             <Col xs={24} md={8}>
               <Card 
-                title={<><UserOutlined /> Trainees</>}
+                title={<><UserOutlined /> Trainees</>} 
                 extra={<Text type="secondary">{trainees.length} trainees</Text>}
               >
                 {trainees.map(trainee => (
                   <div 
-                    key={trainee.id} 
+                    key={trainee.key} 
                     style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
