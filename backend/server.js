@@ -13,6 +13,7 @@ import authWebRoutes from './routes/auth-web.js';       // Web app authenticatio
 import gymRoutes from './routes/gym.js';                // Gym routes
 import androidGymsRoutes from './routes/android-gyms.js'; // Android gyms route
 import feedbackRoutes from './routes/feedback.js';
+import managerRoutes from './routes/managerRoutes.js';
 
 // Initialize express app
 const app = express();
@@ -112,15 +113,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// Use Android Authentication Routes (defined in ./routes/auth.js)
-app.use('/auth', authRoutes);
-
-// Web Routes
-app.use('/api/auth', authRoutes);     // Android app authentication
-app.use('/api/auth-web', authWebRoutes);     // Web app authentication
-app.use('/api/gyms', gymRoutes);           // Gym routes
-app.use('/api/android', androidGymsRoutes); // Android gyms route
-app.use('/api/feedback', feedbackRoutes);
+// Centralized route configuration
+app.use('/api/gyms', gymRoutes);
+app.use('/api/managers', managerRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/web', authWebRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,12 +1,36 @@
 import axios from "axios";
 
-// Create axios instance with proxy-aware base URL
+// Create a consistent API configuration
 const API = axios.create({
-  baseURL: process.env.NODE_ENV === "development"
-    ? "http://localhost:5000"  // Set this to the local backend URL during development
-    : "https://gym-pro5.vercel.app", // Set this to the production backend URL
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api',
   withCredentials: true,
+  timeout: 15000  // 15 seconds timeout
 });
+
+// Centralized error handling
+const handleApiError = (error) => {
+  console.error('API Error:', {
+    errorName: error.name,
+    errorMessage: error.message,
+    responseStatus: error.response?.status,
+    responseData: error.response?.data
+  });
+
+  if (error.response) {
+    // The request was made and the server responded with a status code
+    throw new Error(
+      error.response.data.error || 
+      error.response.data.message || 
+      'Server responded with an error'
+    );
+  } else if (error.request) {
+    // The request was made but no response was received
+    throw new Error('No response received from server. Check your network connection.');
+  } else {
+    // Something happened in setting up the request
+    throw new Error(error.message || 'An unexpected error occurred');
+  }
+};
 
 // Request interceptor for auth headers
 API.interceptors.request.use((config) => {
@@ -21,21 +45,8 @@ API.interceptors.request.use((config) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', {
-      config: error.config,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
-
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(
-      error.response?.data?.message || "An unexpected error occurred."
-    );
+    handleApiError(error);
+    return Promise.reject(error);
   }
 );
 
@@ -71,16 +82,10 @@ export const addGymWithManager = async (gymData) => {
     gymData.set('price', price.toFixed(2));
 
     // Perform submission with enhanced configuration
-    const response = await API.post("/api/gyms/gym", gymData, {
+    const response = await API.post("/gyms/gym", gymData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-      // Add timeout and detailed error handling
-      timeout: 15000,  // 15 seconds
-      transformRequest: [function (data, headers) {
-        // Ensure FormData is sent correctly
-        return data;
-      }]
+      }
     });
     
     console.log('Server Response:', response.data);
@@ -99,111 +104,81 @@ export const addGymWithManager = async (gymData) => {
     });
     console.groupEnd();
     
-    // Enhanced error handling with detailed error parsing
-    if (error.response) {
-      // Handle detailed validation errors
-      if (error.response.data.details) {
-        const detailedErrors = error.response.data.details;
-        const errorMessages = Object.entries(detailedErrors)
-          .map(([field, messages]) => `${field}: ${messages}`)
-          .join('; ');
-        
-        throw new Error(errorMessages || 'Validation failed');
-      }
-
-      // Fallback to generic server error
-      throw new Error(
-        error.response.data.error || 
-        error.response.data.message || 
-        'Server responded with an error'
-      );
-    } else if (error.request) {
-      // The request was made but no response was received
-      throw new Error('No response received from server. Check your network connection.');
-    } else {
-      // Something happened in setting up the request
-      throw new Error(error.message || 'An unexpected error occurred');
-    }
+    handleApiError(error);
   }
 };
 
 export const deleteGym = async (gymId) => {
   try {
-    const response = await API.delete(`/api/web/gym/${gymId}`);
+    const response = await API.delete(`/gyms/${gymId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const fetchGyms = async () => {
   try {
-    const response = await API.get("/api/web/gym");
-    console.log('Fetched gyms:', response.data);
+    const response = await API.get('/gyms');
     return response.data;
   } catch (error) {
-    console.error('Error fetching gyms:', error);
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const updateGym = async (gymId, gymData) => {
   try {
-    const response = await API.put(`/api/web/gym/${gymId}`, gymData);
+    const response = await API.put(`/gyms/${gymId}`, gymData);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const fetchGymById = async (gymId) => {
   try {
-    const response = await API.get(`/api/web/gym/${gymId}`);
+    const response = await API.get(`/gyms/${gymId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 // 👨‍💼 Manager Endpoints
 export const addTrainer = async (gymId, trainerData) => {
   try {
-    const response = await API.post(`/api/trainer`, {
-      gymId,
-      ...trainerData
-    });
+    const response = await API.post(`/gyms/${gymId}/trainers`, trainerData);
     return response;
   } catch (error) {
-    console.error('Error adding trainer:', error);
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const updatePrices = async (prices) => {
   try {
-    const response = await API.put("/manager/prices", prices);
+    const response = await API.put("/prices", prices);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const updateLocation = async (location) => {
   try {
-    const response = await API.put("/manager/location", location);
+    const response = await API.put("/location", location);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 // 🏋️‍♂️ Trainer Endpoints
 export const addWorkoutPlan = async (planData) => {
   try {
-    const response = await API.post("/trainer/workouts", planData);
+    const response = await API.post("/trainers/workouts", planData);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -213,7 +188,7 @@ export const login = async (credentials) => {
     const response = await API.post("/auth/login", credentials);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -222,7 +197,7 @@ export const register = async (userData) => {
     const response = await API.post("/auth/register", userData);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -232,47 +207,45 @@ export const fetchTrainees = async () => {
     const response = await API.get("/trainees");
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const fetchTrainers = async (gymId) => {
   try {
-    const response = await API.get(`/trainer/${gymId}/trainers`);
+    const response = await API.get(`/gyms/${gymId}/trainers`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 export const fetchWorkoutPlansByGym = async (gymId) => {
   try {
-    const response = await API.get(`/gym/${gymId}/workout-plans`);
+    const response = await API.get(`/gyms/${gymId}/workout-plans`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
 // 👥 Manager Fetching
 export const fetchManagers = async () => {
   try {
-    const response = await API.get("/api/web/managers");
-    console.log('Fetched managers:', response.data);
+    const response = await API.get('/managers');
     return response.data;
   } catch (error) {
-    console.error('Error fetching managers:', error);
-    throw error;
+    handleApiError(error);
   }
 };
 
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
-    const response = await API.delete(`/trainer/${trainerId}`);
+    const response = await API.delete(`/trainers/${trainerId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -281,7 +254,7 @@ export const deleteTrainee = async (traineeId) => {
     const response = await API.delete(`/trainees/${traineeId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
@@ -290,7 +263,7 @@ export const deleteWorkoutPlan = async (planId) => {
     const response = await API.delete(`/workouts/${planId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    handleApiError(error);
   }
 };
 
