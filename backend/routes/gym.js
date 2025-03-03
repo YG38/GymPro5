@@ -40,27 +40,7 @@ const handleMulterError = (err, req, res, next) => {
 
 // POST: Create Gym with Manager
 router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) => {
-  // Extremely verbose logging
-  console.log(' FULL REQUEST DIAGNOSTIC:', {
-    requestMethod: req.method,
-    requestUrl: req.url,
-    timestamp: new Date().toISOString(),
-    rawBody: JSON.stringify(req.body),
-    bodyType: typeof req.body,
-    bodyKeys: Object.keys(req.body),
-    fileInfo: req.file ? {
-      fieldname: req.file.fieldname,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      bufferPresent: !!req.file.buffer,
-      bufferLength: req.file.buffer ? req.file.buffer.length : 'N/A'
-    } : 'NO FILE',
-    headers: JSON.stringify(req.headers)
-  });
-
   try {
-    // Destructure with default empty strings to prevent undefined errors
     const { 
       gymName = '', 
       location = '', 
@@ -115,102 +95,74 @@ router.post("/gym", upload.single("logo"), handleMulterError, async (req, res) =
       });
     }
 
-    console.log(' All validations passed. Proceeding with gym creation...');
+    // Check if a gym with this name already exists
+    const existingGym = await Gym.findOne({ gymName: gymName.trim() });
+    if (existingGym) {
+      console.error('Duplicate gym name:', gymName);
+      return res.status(400).json({ 
+        error: "A gym with this name already exists",
+        details: { gymName: "Gym name must be unique" }
+      });
+    }
 
-    console.log('Processing gym creation with data:', {
-      gymName,
-      location,
-      price,
-      managerName,
-      managerEmail,
-      hasFile: !!req.file
-    });
-    
     // Check if a manager with this email already exists
     const existingManager = await WebUser.findOne({ email: managerEmail.toLowerCase() });
     if (existingManager) {
       console.error('Duplicate manager email:', managerEmail);
-      return res.status(400).json({ error: "A manager with this email already exists" });
+      return res.status(400).json({ 
+        error: "A manager with this email already exists",
+        details: { managerEmail: "Email must be unique" }
+      });
     }
 
-    try {
-      // Hash the manager's password
-      const hashedPassword = await bcrypt.hash(managerPassword, 10);
-      console.log('Password hashed successfully');
+    // Hash the manager's password
+    const hashedPassword = await bcrypt.hash(managerPassword, 10);
 
-      // Create manager user account
-      const managerUser = new WebUser({
-        name: managerName,
-        email: managerEmail.toLowerCase(),
-        password: hashedPassword,
-        role: 'manager'
-      });
-
-      await managerUser.save();
-      console.log('Manager user account created successfully');
-
-      // Create new Gym with base64 logo if provided
-      const newGym = new Gym({
-        gymName: gymName.trim(),
-        location: location.trim(),
-        price: parseFloat(price),
-        manager: {
-          userId: managerUser._id,
-          name: managerName.trim(),
-          email: managerEmail.trim().toLowerCase()
-        },
-        logo: req.file ? {
-          data: req.file.buffer.toString('base64'),
-          contentType: req.file.mimetype
-        } : undefined
-      });
-
-      console.log('Attempting to save gym:', {
-        gymName: newGym.gymName,
-        location: newGym.location,
-        price: newGym.price,
-        managerName: newGym.manager.name,
-        managerEmail: newGym.manager.email,
-        logo: newGym.logo
-      });
-
-      await newGym.save();
-      console.log('Gym saved successfully');
-      
-      res.status(201).json({ 
-        message: "Gym created successfully",
-        gym: {
-          ...newGym.toObject(),
-          manager: {
-            name: newGym.manager.name,
-            email: newGym.manager.email
-          }
-        }
-      });
-    } catch (innerError) {
-      console.error('Error during gym creation:', innerError);
-      // If there's an error, clean up the uploaded file
-      if (req.file) {
-        try {
-          // fs.unlinkSync(req.file.path); // Removed this line
-          console.log('Cleaned up uploaded file after error');
-        } catch (unlinkError) {
-          console.error('Error cleaning up file:', unlinkError);
-        }
-      }
-      throw innerError;
-    }
-  } catch (error) {
-    console.error(' CRITICAL UNEXPECTED ERROR:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack,
-      requestBody: JSON.stringify(req.body)
+    // Create manager user account
+    const managerUser = new WebUser({
+      name: managerName,
+      email: managerEmail.toLowerCase(),
+      password: hashedPassword,
+      role: 'manager'
     });
 
+    await managerUser.save();
+
+    // Create new Gym with base64 logo if provided
+    const newGym = new Gym({
+      gymName: gymName.trim(),
+      location: location.trim(),
+      price: parseFloat(price),
+      manager: {
+        userId: managerUser._id,
+        name: managerName.trim(),
+        email: managerEmail.trim().toLowerCase()
+      },
+      logo: req.file ? {
+        data: req.file.buffer.toString('base64'),
+        contentType: req.file.mimetype
+      } : undefined
+    });
+
+    await newGym.save();
+    
+    res.status(201).json({ 
+      message: "Gym created successfully",
+      data: {
+        ...newGym.toObject(),
+        manager: {
+          name: newGym.manager.name,
+          email: newGym.manager.email
+        }
+      },
+      success: true
+    });
+  } catch (error) {
+    console.error('Error during gym creation:', error);
     res.status(500).json({ 
-      error: "Unexpected server error during gym creation", 
-      details: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+      error: "Unexpected error during gym creation", 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      success: false
     });
   }
 });
