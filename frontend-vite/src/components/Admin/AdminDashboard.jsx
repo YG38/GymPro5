@@ -34,6 +34,8 @@ const AdminDashboard = () => {
         fetchGyms(),
         fetchManagers()
       ]);
+      console.log('Gyms response:', gymsResponse);
+      console.log('Managers response:', managersResponse);
       setGyms(gymsResponse.data || []);
       setManagers(managersResponse.data || []);
     } catch (error) {

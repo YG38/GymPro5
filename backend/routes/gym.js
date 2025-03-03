@@ -241,10 +241,17 @@ router.get("/gym", async (req, res) => {
     console.log('Fetching all gyms...');
     const gyms = await Gym.find({}).select('-manager.password');
     console.log(`Found ${gyms.length} gyms`);
-    res.json(gyms);
+    res.json({
+      data: gyms,
+      total: gyms.length,
+      success: true
+    });
   } catch (error) {
     console.error('Error fetching gyms:', error);
-    res.status(500).json({ error: "Error fetching gyms" });
+    res.status(500).json({ 
+      error: "Error fetching gyms",
+      success: false
+    });
   }
 });
 
