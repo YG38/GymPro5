@@ -3,263 +3,177 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
+import validator from 'validator';
 
 dotenv.config();
-
 const router = express.Router();
 
-// Register Route
-router.post('/register', async (req, res) => {
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    throw new Error("⚠️ JWT_SECRET is missing in environment variables!");
+}
+
+// Rate limiter for login and register
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: { success: false, message: "Too many attempts, please try again later." }
+});
+
+// ✅ Utility function to generate JWT token
+const generateToken = (user) => {
+    return jwt.sign(
+        { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+};
+
+// ✅ Register Route
+router.post('/register', authLimiter, async (req, res) => {
     try {
         const { firstName, lastName, email, password } = req.body;
         console.log(`[REGISTER] Attempt - Email: ${email}`);
 
-        // Validate input
         if (!firstName || !lastName || !email || !password) {
-            console.log('[REGISTER] Missing required fields');
-            return res.status(400).json({ 
-                success: false,
-                message: 'All fields are required',
-                fields: {
-                    firstName: !firstName,
-                    lastName: !lastName,
-                    email: !email,
-                    password: !password
-                }
-            });
+            return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-            console.log(`[REGISTER] Invalid email format: ${email}`);
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid email format' 
-            });
+        if (!validator.isEmail(email.trim())) {
+            return res.status(400).json({ success: false, message: "Invalid email format" });
         }
 
-        // Check if the user already exists
-        const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+        // Normalize email
+        const normalizedEmail = validator.normalizeEmail(email);
+
+        const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
-            console.log(`[REGISTER] User already exists: ${email}`);
-            return res.status(400).json({ 
+            return res.status(400).json({ success: false, message: "User already exists with this email" });
+        }
+
+        // Strong password validation
+        if (!validator.isStrongPassword(password, { minLength: 8, minUppercase: 1, minNumbers: 1, minSymbols: 1 })) {
+            return res.status(400).json({
                 success: false,
-                message: 'User already exists with this email' 
+                message: "Password must be at least 8 characters long and contain an uppercase letter, number, and symbol"
             });
         }
 
-        // Validate password strength
-        if (password.length < 6) {
-            console.log('[REGISTER] Password too short');
-            return res.status(400).json({ 
-                success: false,
-                message: 'Password must be at least 6 characters long' 
-            });
-        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create a new user
-        const newUser = new User({ 
-            firstName: firstName.trim(), 
-            lastName: lastName.trim(), 
-            email: email.trim().toLowerCase(), 
+        const newUser = new User({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: normalizedEmail,
             password: hashedPassword,
             createdAt: new Date()
         });
 
-        // Save the user to the database
         await newUser.save();
+        const token = generateToken(newUser);
 
-        // Generate token for immediate login
-        const secret = process.env.JWT_SECRET || 'fallback_secret_key';
-        const token = jwt.sign(
-            { 
-                id: newUser._id, 
-                email: newUser.email,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName
-            }, 
-            secret, 
-            { expiresIn: '1h' }
-        );
-
-        console.log(`[REGISTER] User registered successfully: ${email}`);
-        res.status(201).json({ 
+        res.status(201).json({
             success: true,
-            message: 'User registered successfully',
-            token: token,
-            user: {
-                id: newUser._id,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                email: newUser.email
-            }
+            message: "User registered successfully",
+            token,
+            user: { id: newUser._id, firstName, lastName, email: normalizedEmail }
         });
     } catch (error) {
         console.error('[REGISTER] Server error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Server error during registration',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
-        });
+        res.status(500).json({ success: false, message: "Server error during registration" });
     }
 });
 
-router.post('/login', async (req, res) => {
+// ✅ Login Route
+router.post('/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
         console.log(`[LOGIN] Attempt for email: ${email}`);
-        console.log(`[LOGIN] Request body: ${JSON.stringify(req.body)}`);
 
         if (!email || !password) {
-            console.log('[LOGIN] Missing email or password');
-            return res.status(400).json({ 
-                success: false,
-                message: 'All fields are required' 
-            });
+            return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
-        // Find user with exact email match
-        const user = await User.findOne({ email: email.trim() });
-        if (!user) {
-            console.log(`[LOGIN] No user found with email: ${email}`);
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid credentials' 
-            });
+        const normalizedEmail = validator.normalizeEmail(email);
+        const user = await User.findOne({ email: normalizedEmail });
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(400).json({ success: false, message: "Invalid credentials" });
         }
 
-        // Log user details for debugging
-        console.log(`[LOGIN] User found: ${JSON.stringify({
-            id: user._id,
-            email: user.email,
-            hashedPasswordLength: user.password.length
-        })}`);
-
-        // Compare passwords
-        const isMatch = await bcrypt.compare(password, user.password);
-        console.log(`[LOGIN] Password match result: ${isMatch}`);
-
-        if (!isMatch) {
-            console.log(`[LOGIN] Password mismatch for email: ${email}`);
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid credentials' 
-            });
-        }
-
-        // Generate token
-        const secret = process.env.JWT_SECRET || 'fallback_secret_key';
-        const token = jwt.sign(
-            { 
-                id: user._id, 
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName
-            }, 
-            secret, 
-            { expiresIn: '1h' }
-        );
-
-        console.log(`[LOGIN] Successful for email: ${email}`);
+        const token = generateToken(user);
         res.json({
             success: true,
-            token: token,
-            user: {
-                id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email
-            },
-            message: 'Login successful'
+            token,
+            user: { id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email },
+            message: "Login successful"
         });
     } catch (error) {
         console.error('[LOGIN] Error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Server error', 
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
-        });
+        res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
-// Authentication middleware (to verify token)
+// ✅ Middleware to Verify Token
 const verifyToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-        return res.status(403).json({ message: 'Token is required' });
-    }
+    if (!token) return res.status(401).json({ message: "Access Denied: No token provided" });
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Invalid or expired token' });
-        }
-        req.user = decoded; // Attach the decoded user info to the request
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(401).json({ message: "Invalid or expired token" });
+
+        req.user = decoded;
         next();
     });
 };
 
-// Change Password Route with Token Authentication
+// ✅ Change Password Route
 router.post('/change-password', verifyToken, async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
-        const userId = req.user.id; // Get the user ID from the token
 
         if (!oldPassword || !newPassword) {
-            return res.status(400).json({ message: 'All fields are required' });
+            return res.status(400).json({ message: "All fields are required" });
         }
 
-        const user = await User.findById(userId); // Find user by ID from token
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        const user = await User.findById(req.user.id);
+        if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
+            return res.status(400).json({ message: "Invalid old password" });
         }
 
-        const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid old password' });
+        if (!validator.isStrongPassword(newPassword, { minLength: 8, minUppercase: 1, minNumbers: 1, minSymbols: 1 })) {
+            return res.status(400).json({ message: "Password must be strong (uppercase, number, and symbol)" });
         }
 
-        if (newPassword.length < 8) {
-            return res.status(400).json({ message: 'Password must be at least 8 characters' });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedPassword;
+        user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
 
-        res.status(200).json({ message: 'Password updated successfully' });
+        res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
-// Delete Account Route
-router.delete('/delete-account', express.json(), verifyToken, async (req, res) => {
+// ✅ Delete Account Route
+router.delete('/delete-account', verifyToken, async (req, res) => {
     try {
-        const { email } = req.body;  // Get email from request body
-
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
+        const { email } = req.body;
+        if (!email || email !== req.user.email) {
+            return res.status(403).json({ message: "Unauthorized request" });
         }
 
-        // Now, we check if the user trying to delete the account matches the token (email from token)
-        if (email !== req.user.email) {
-            return res.status(403).json({ message: 'You are not authorized to delete this account' });
-        }
-
-        // Find and delete the user by email
         const user = await User.findOneAndDelete({ email });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json({ message: 'Account deleted successfully' });
+        res.status(200).json({ message: "Account deleted successfully" });
     } catch (error) {
         console.error("❌ Error in /delete-account:", error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
