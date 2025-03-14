@@ -76,44 +76,27 @@ const mongooseOptions = {
   retryWrites: true                // Enable retryable writes
 };
 
-const connectWithRetry = () => {
-  mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
-    .then(() => {
-      console.log('✅ Connected to MongoDB');
-      // Verify connection status
-      console.log('Connection readyState:', mongoose.connection.readyState);
-    })
-    .catch(err => {
-      console.error('❌ MongoDB connection error:', err.message);
-      console.log('⏳ Retrying in 5 seconds...');
-      setTimeout(connectWithRetry, 5000);
+const connectWithRetry = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
+    console.log('✅ Connected to MongoDB');
+    
+    // Start server only after MongoDB connection is established
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`🌐 Local: http://localhost:${PORT}`);
     });
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.log('⏳ Retrying in 5 seconds...');
+    setTimeout(connectWithRetry, 5000);
+  }
 };
 
-// 📢 MongoDB connection events
-mongoose.connection.on('connected', () => {
-  console.log('📢 MongoDB Connection Established');
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB Disconnected!');
-  // Mongoose will automatically attempt to reconnect
-});
-
-mongoose.connection.on('reconnected', () => {
-  console.log('♻️ MongoDB Reconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB Connection Error:', err.message);
-});
-
-// 🔧 Configure Mongoose defaults
-mongoose.set('strictQuery', true);  // Recommended for future compatibility
-mongoose.set('bufferCommands', false); // Disable command buffering
-
-// 🚀 Start initial connection
+// Call the connectWithRetry function to initiate the connection
 connectWithRetry();
+
 
 // 📍 Root Route
 app.get('/', (req, res) => {
