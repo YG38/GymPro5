@@ -119,7 +119,6 @@ export const deleteGym = async (gymId) => {
 
 export const fetchGyms = async () => {
   try {
-<<<<<<< HEAD
     console.log('🏋️ FETCHING GYMS - START');
     const timestamp = new Date().toISOString();
     console.log('Fetch Timestamp:', timestamp);
@@ -131,12 +130,6 @@ export const fetchGyms = async () => {
   } catch (error) {
     console.error('❌ Error Fetching Gyms:', error);
     throw error;
-=======
-    const response = await API.get('/gyms');
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
   }
 };
 
@@ -170,11 +163,7 @@ export const addTrainer = async (gymId, trainerData) => {
 
 export const updatePrices = async (prices) => {
   try {
-<<<<<<< HEAD
     const response = await API.put("/api/manager/prices", prices);
-=======
-    const response = await API.put("/prices", prices);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -183,11 +172,7 @@ export const updatePrices = async (prices) => {
 
 export const updateLocation = async (location) => {
   try {
-<<<<<<< HEAD
     const response = await API.put("/api/manager/location", location);
-=======
-    const response = await API.put("/location", location);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -197,11 +182,7 @@ export const updateLocation = async (location) => {
 // 🏋️‍♂️ Trainer Endpoints
 export const addWorkoutPlan = async (planData) => {
   try {
-<<<<<<< HEAD
     const response = await API.post("/api/trainer/workouts", planData);
-=======
-    const response = await API.post("/trainers/workouts", planData);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -236,22 +217,14 @@ export const fetchTrainees = async () => {
     console.log('🏃 Trainees Fetch Response:', response.data);
     return response.data;
   } catch (error) {
-<<<<<<< HEAD
     console.error('❌ Error Fetching Trainees:', error);
     throw error;
-=======
-    handleApiError(error);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
   }
 };
 
 export const fetchTrainers = async (gymId) => {
   try {
-<<<<<<< HEAD
     const response = await API.get(`/api/trainer/${gymId}/trainers`);
-=======
-    const response = await API.get(`/gyms/${gymId}/trainers`);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -260,11 +233,7 @@ export const fetchTrainers = async (gymId) => {
 
 export const fetchWorkoutPlansByGym = async (gymId) => {
   try {
-<<<<<<< HEAD
     const response = await API.get(`/api/gym/${gymId}/workout-plans`);
-=======
-    const response = await API.get(`/gyms/${gymId}/workout-plans`);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -274,7 +243,6 @@ export const fetchWorkoutPlansByGym = async (gymId) => {
 // 👥 Manager Fetching
 export const fetchManagers = async () => {
   try {
-<<<<<<< HEAD
     console.log('👥 FETCHING MANAGERS - START');
     const response = await API.get("/api/gyms/managers");
     
@@ -283,23 +251,13 @@ export const fetchManagers = async () => {
   } catch (error) {
     console.error('❌ Error Fetching Managers:', error);
     throw error;
-=======
-    const response = await API.get('/managers');
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
   }
 };
 
 // ❌ Delete Operations
 export const deleteTrainer = async (trainerId) => {
   try {
-<<<<<<< HEAD
     const response = await API.delete(`/api/trainer/${trainerId}`);
-=======
-    const response = await API.delete(`/trainers/${trainerId}`);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -311,12 +269,8 @@ export const deleteTrainee = async (traineeId) => {
     const response = await API.delete(`/api/gyms/trainees/${traineeId}`);
     return response.data;
   } catch (error) {
-<<<<<<< HEAD
     console.error('❌ Error Deleting Trainee:', error);
     throw error;
-=======
-    handleApiError(error);
->>>>>>> aad843acb6cc602aa99fdc8f3a00c2bb76e0b8d1
   }
 };
 
