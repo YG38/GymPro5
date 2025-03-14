@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import validator from 'validator';
+import mongoose from 'mongoose';
 
 dotenv.config();
 const router = express.Router();
@@ -31,6 +32,18 @@ const generateToken = (user) => {
     );
 };
 
+// ✅ Ensure MongoDB connection before queries
+const ensureMongoConnection = async () => {
+    if (mongoose.connection.readyState !== 1) {
+        console.log('🌐 MongoDB not connected, connecting now...');
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('✅ MongoDB connected');
+    }
+};
+
 // ✅ Register Route
 router.post('/register', authLimiter, async (req, res) => {
     try {
@@ -47,6 +60,8 @@ router.post('/register', authLimiter, async (req, res) => {
 
         // Normalize email
         const normalizedEmail = validator.normalizeEmail(email);
+
+        await ensureMongoConnection();
 
         const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
@@ -98,6 +113,9 @@ router.post('/login', authLimiter, async (req, res) => {
         }
 
         const normalizedEmail = validator.normalizeEmail(email);
+
+        await ensureMongoConnection();
+
         const user = await User.findOne({ email: normalizedEmail });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
